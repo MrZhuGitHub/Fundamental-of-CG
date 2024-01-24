@@ -355,7 +355,7 @@ void updataShaderUniformProperty(GLuint& glesProgram, TransformMatrix& modelTran
     mvpTransform.initProjectionTransformMatrix(1.5, 1000);
 */
 
-/*  car
+// /*  car
     cameraPosition.x = 0;
     cameraPosition.y = -2.5;
     cameraPosition.z = -20;
@@ -364,9 +364,9 @@ void updataShaderUniformProperty(GLuint& glesProgram, TransformMatrix& modelTran
     cameraPosition.rotationZ = variable;
     mvpTransform.initViewTransformMatrix(cameraPosition);
     mvpTransform.initProjectionTransformMatrix(2, 10);
-*/
+// */
 
-// /*  test
+/*
     std::cout << "cameraPosition.x = ";
     std::cin >> cameraPosition.x;
     std::cout << "cameraPosition.y = ";
@@ -388,7 +388,7 @@ void updataShaderUniformProperty(GLuint& glesProgram, TransformMatrix& modelTran
     std::cin >> far;
 
     mvpTransform.initProjectionTransformMatrix(near, far);
-// */
+*/
 
     TransformMatrix modelMatrix = mvpTransform.getModelTransformMatrix();
     auto modelMatrixLocation = glGetUniformLocation(glesProgram, "modelMatrix");
@@ -441,7 +441,7 @@ int main() {
     GLuint glesProgram;
     float* vertex;
     int vectexCount = 0;
-    const char* path = "/opengles/AutoDriveDisplay/DisplaySTL/car.stl";
+    const char* path = "/opengles/Fundamental-of-CG/DisplaySTL/car.stl";
     TransformMatrix modelTransformMatrix;
 
     if (!init(display, eglSurface)) {
