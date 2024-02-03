@@ -2,7 +2,7 @@
 #include "material.h"
 #include "ray.h"
 
-#define SPHERE_OFFSET 0.1
+#define SPHERE_OFFSET 0.0001
 
 namespace CG {
 object::object(std::shared_ptr<material> material)
@@ -75,12 +75,10 @@ bool sphere::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> 
 
 std::shared_ptr<aabb> sphere::getAabb()
 {
-
-}
-
-bool sphere::hit(std::shared_ptr<ray> rayTrace, double& t)
-{
-
+    return std::make_shared<aabb>(center_.xPosition - radius_, center_.xPosition + radius_,
+                                  center_.yPosition - radius_, center_.yPosition + radius_,
+                                  center_.zPosition - radius_, center_.zPosition + radius_,
+                                  shared_from_this());
 }
 
 ground::ground(std::shared_ptr<material> material, vec3 point, vec3 direction) 
@@ -119,12 +117,10 @@ bool ground::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> 
 
 std::shared_ptr<aabb> ground::getAabb()
 {
-
-}
-
-bool ground::hit(std::shared_ptr<ray> rayTrace, double& t)
-{
-    
+    return std::make_shared<aabb>((double)(0xffffffffffffffff), (double)(0xffffffffffffffff>>1),
+                                  (double)(0xffffffffffffffff), (double)(0xffffffffffffffff>>1),
+                                  (double)(0xffffffffffffffff), (double)(0xffffffffffffffff>>1),
+                                  shared_from_this());
 }
 
 }

@@ -1,5 +1,6 @@
 #include "ray.h"
 #include "object.h"
+#include "bvh.h"
 
 namespace CG {
 ray::ray(vec3 origin = vec3(0, 0, 0), vec3 direction = vec3(0, 0, 0))
@@ -20,12 +21,14 @@ ray& ray::operator=(ray& r) {
     return *this;
 }
 
-color ray::getRayColor(std::vector<std::shared_ptr<object>> objects, unsigned int launchCount) {
+color ray::getRayColor(std::shared_ptr<bvh> rootBvh, unsigned int launchCount) {
     if (launchCount <= 0) {
         return color(0, 0, 0);
     }
 
-    //todo: using BVH to optimize here.
+    std::vector<std::shared_ptr<object>> objects;
+    rootBvh->hit(shared_from_this(), objects);
+
     double finalIntersection = DOUBLE_MAX;
     auto finalScatter = std::make_shared<ray>();
     vec3 finalAttenuation;
@@ -45,7 +48,7 @@ color ray::getRayColor(std::vector<std::shared_ptr<object>> objects, unsigned in
     }
 
     if (isHit) {
-        color ret = finalAttenuation * finalScatter->getRayColor(objects, launchCount - 1);
+        color ret = finalAttenuation * finalScatter->getRayColor(rootBvh, launchCount - 1);
         return ret;
     } else {
         vec3 unit = direction_.unit();

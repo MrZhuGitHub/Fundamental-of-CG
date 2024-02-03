@@ -2,15 +2,16 @@
 #define _BVH_H_
 
 #include <memory>
-#include <ray>
 #include <vector>
+
+#include "ray.h"
 
 namespace CG {
 
-enum COMPARE_RULE {
-    COMPARE_RULE_X = 0,
-    COMPARE_RULE_y = 0,
-    COMPARE_RULE_Z = 0,
+enum AabbCompare {
+    AABB_COMPARE_X = 0,
+    AABB_COMPARE_Y,
+    AABB_COMPARE_Z,
 };
 
 class object;
@@ -31,15 +32,33 @@ public:
     }
 
     aabb(aabb& object) {
-
+        xMin_ = object.getXmin();
+        xMax_ = object.getXmax();
+        yMin_ = object.getYmin();
+        yMax_ = object.getYmax();
+        zMin_ = object.getZmin();
+        zMax_ = object.getZmax();
+        object_ = object.getObject();
     }
 
     aabb& operator=(aabb& object) {
-
+        xMin_ = object.getXmin();
+        xMax_ = object.getXmax();
+        yMin_ = object.getYmin();
+        yMax_ = object.getYmax();
+        zMin_ = object.getZmin();
+        zMax_ = object.getZmax();
+        return (*this);
     }
 
     aabb& operator=(aabb&& object) {
-
+        xMin_ = object.getXmin();
+        xMax_ = object.getXmax();
+        yMin_ = object.getYmin();
+        yMax_ = object.getYmax();
+        zMin_ = object.getZmin();
+        zMax_ = object.getZmax();
+        return (*this);
     }
 
     bool hit(std::shared_ptr<ray> in);
@@ -74,9 +93,9 @@ public:
 
     static std::shared_ptr<bvh> getBvhAvlTree(std::vector<std::shared_ptr<aabb>> aabbs);
 
-    static bool compare(std::shared_ptr<aabb>& aabb1, std::shared_ptr<aabb>& aabb2);
+    static bool compare(std::shared_ptr<aabb> aabb1, std::shared_ptr<aabb> aabb2);
 
-    bool hit(std::shared_ptr<ray> in, double hitRecord, std::vector<std::shared_ptr<aabb>> leafAabbs);
+    bool hit(std::shared_ptr<ray> in, std::vector<std::shared_ptr<object>>& maybeHitObjects);
 
     std::shared_ptr<aabb> getBvhAabb() const { return bvhAabb_;};
 
@@ -84,6 +103,7 @@ private:
     std::shared_ptr<aabb> bvhAabb_;
     std::shared_ptr<bvh> leftBvh_;
     std::shared_ptr<bvh> rightBvh_;
+    static AabbCompare kAabbCompare;
 };
 }
 

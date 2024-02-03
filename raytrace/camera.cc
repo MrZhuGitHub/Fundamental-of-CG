@@ -1,6 +1,7 @@
 #include "camera.h"
 #include "object.h"
 #include "ray.h"
+#include "bvh.h"
 
 namespace CG {
 
@@ -46,6 +47,13 @@ camera::camera(double height, double width, uint32_t pixelWidth, uint32_t pixelH
 }
 
 void camera::render(std::vector<std::shared_ptr<object>> objects, uint32_t launchCount, uint32_t samples) {
+
+    std::vector<std::shared_ptr<aabb>> aabbs;
+    for (auto& object : objects) {
+        aabbs.push_back(object->getAabb());
+    }
+    std::shared_ptr<bvh> rootBvh = bvh::getBvhAvlTree(aabbs);
+
     double* imageBuffer = (double*)malloc(pixelHeight_*pixelWidth_*3*sizeof(double));
     memset((void*)(imageBuffer), 0 ,pixelHeight_*pixelWidth_*3*sizeof(double));
     for (uint32_t yIndex = 0; yIndex < pixelHeight_; yIndex++) {
@@ -54,7 +62,7 @@ void camera::render(std::vector<std::shared_ptr<object>> objects, uint32_t launc
                 auto rays = this->getRays(x, y, samples);
                 color pixelColor(0, 0, 0);
                 for (auto& ray : rays) {
-                    color sampleColor = ray->getRayColor(objects, launchCount);
+                    color sampleColor = ray->getRayColor(rootBvh, launchCount);
                     pixelColor = pixelColor + sampleColor;
                 }
                 pixelColor = pixelColor/samples;

@@ -10,6 +10,8 @@ namespace CG {
 
 class object;
 
+class bvh;
+
 #define DOUBLE_MAX 1000000
 
 class ray : public std::enable_shared_from_this<ray> {
@@ -20,7 +22,7 @@ public:
 
     ray& operator=(ray& r);
 
-    color getRayColor(std::vector<std::shared_ptr<object>> objects, unsigned int launchCount);
+    color getRayColor(std::shared_ptr<bvh> rootBvh, unsigned int launchCount);
 
     vec3 getOrigin();
 

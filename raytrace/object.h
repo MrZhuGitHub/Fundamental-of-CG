@@ -2,7 +2,7 @@
 #define _OBJECT_H_
 
 #include "common.hpp"
-#include "aabb.h"
+#include "bvh.h"
 
 #include <memory>
 
@@ -11,13 +11,13 @@ namespace CG {
 class material;
 class ray;
 
-class object {
+class object : public std::enable_shared_from_this<object> {
 public:
     object(std::shared_ptr<material> material);
 
     virtual bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) = 0;
 
-    virtual bool hit(std::shared_ptr<ray> rayTrace, double& t) = 0;
+    virtual std::shared_ptr<aabb> getAabb() = 0;
 
 protected:
     std::shared_ptr<material> material_;
