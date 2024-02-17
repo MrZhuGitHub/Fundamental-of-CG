@@ -8,9 +8,21 @@ using namespace CG;
 int main() {
     std::vector<std::shared_ptr<object>> objects;
 
-    // std::shared_ptr<material> lambertianMaterial1 = std::make_shared<lambertian>(vec3(0.5, 0.5, 0.5));
-    // std::shared_ptr<object> ground1 = std::make_shared<sphere>(lambertianMaterial1, vec3(0, -200000, 0), 100000);
-    // objects.push_back(ground1);
+    // std::shared_ptr<material> lambertianMaterial = std::make_shared<lambertian>(vec3(0.8, 0.5, 0.7));
+    // std::shared_ptr<object> sphere1 = std::make_shared<sphere>(lambertianMaterial, vec3(-20, 10, 15), 10);
+    // objects.push_back(sphere1);
+
+    // std::shared_ptr<material> lambertianMateria2 = std::make_shared<lambertian>(vec3(0.5, 0.5, 0.5));
+    // std::shared_ptr<object> sphere2 = std::make_shared<sphere>(lambertianMateria2, vec3(20, 10, -15), 10);
+    // objects.push_back(sphere2);
+
+    // std::shared_ptr<material> lambertianMateria3 = std::make_shared<lambertian>(vec3(0.2, 0.4, 0.9));
+    // std::shared_ptr<object> sphere3 = std::make_shared<sphere>(lambertianMateria3, vec3(0, 10, 0), 10);
+    // objects.push_back(sphere3);
+
+    std::shared_ptr<material> lambertianMaterial1 = std::make_shared<lambertian>(vec3(0.5, 0.5, 0.5));
+    std::shared_ptr<object> ground1 = std::make_shared<sphere>(lambertianMaterial1, vec3(0, -100000, 0), 100000);
+    objects.push_back(ground1);
 
     std::shared_ptr<material> lambertianMaterial = std::make_shared<lambertian>(vec3(0.8, 0.5, 0.7));
     std::shared_ptr<object> sphere1 = std::make_shared<sphere>(lambertianMaterial, vec3(-20, 10, 15), 10);
@@ -24,8 +36,8 @@ int main() {
     std::shared_ptr<object> sphere3 = std::make_shared<sphere>(dielectricMaterial, vec3(0, 10, 0), 10);
     objects.push_back(sphere3);
 
-    for (int x = -3; x <= 3; x++) {
-        for (int z = -3; z <= 3; z++) {
+    for (int x = -11; x <= 11; x++) {
+        for (int z = -11; z <= 11; z++) {
             double typeRand = rand()%100;
             double xOffset = (double)(rand()%100)/(20.0) + 2.5;
             double zOffset = (double)(rand()%100)/(20.0) + 2.5;
@@ -62,10 +74,10 @@ int main() {
         }
     }
 
-    std::shared_ptr<camera> cameraObject = std::make_shared<camera>(1, 1.6, 1280, 800, 1, Position(80, 10, 0, 0, -90, 0));
+    std::shared_ptr<camera> cameraObject = std::make_shared<camera>(1, 1.6, 2880, 1800, 1, Position(80, 10, 0, 0, -90, 0));
 
     uint32_t launchCount = 10;
-    uint32_t samples = 30;
+    uint32_t samples = 10;
     cameraObject->render(objects, launchCount, samples);
 
     return 0;

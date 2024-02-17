@@ -31,6 +31,10 @@ bool aabb::hit(std::shared_ptr<ray> in) {
     double maxMin = (xMaxT < yMaxT ? xMaxT : yMaxT);
     maxMin = (maxMin < zMaxT ? maxMin : zMaxT);
 
+    if (minMax <= 0 && maxMin<= 0) {
+        return false;
+    }
+
     if (minMax < maxMin) {
         return true;
     } else {
@@ -119,7 +123,15 @@ bool bvh::hit(std::shared_ptr<ray> in, std::vector<std::shared_ptr<object>>& may
         return true;
     }
 
-    return (leftBvh_->hit(in, maybeHitObjects)||rightBvh_->hit(in, maybeHitObjects));
+    if (leftBvh_) {
+        leftBvh_->hit(in, maybeHitObjects);
+    }
+
+    if (rightBvh_) {
+        rightBvh_->hit(in, maybeHitObjects);
+    }
+
+    return true;
 }
 
 }
