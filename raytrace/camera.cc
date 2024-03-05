@@ -8,12 +8,12 @@ namespace CG {
 camera::camera(double height, double width, uint32_t pixelWidth, uint32_t pixelHeight,
     double len, Position position)
     : height_(height),
-        width_(width),
-        pixelWidth_(pixelWidth),
-        pixelHeight_(pixelHeight),
-        len_(len),
-        position_(position),
-        ppmHead_(false) {
+      width_(width),
+      pixelWidth_(pixelWidth),
+      pixelHeight_(pixelHeight),
+      len_(len),
+      position_(position),
+      ppmHead_(false) {
     TransformMatrix translationMatrix;
     translationMatrix(0, 0) = 1;
     translationMatrix(1, 1) = 1;
@@ -92,6 +92,15 @@ void camera::writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color
     if (!ppmHead_) {
         std::cout << "P3\n" << pixelWidth_ << ' ' << pixelHeight_ << "\n255\n";
         ppmHead_ = true;
+    }
+    if (pixelColor.xPosition > 1) {
+        pixelColor.xPosition = 1;
+    }
+    if (pixelColor.yPosition > 1) {
+        pixelColor.yPosition = 1;
+    }
+    if (pixelColor.zPosition > 1) {
+        pixelColor.zPosition = 1;
     }
     int ir = static_cast<int>(255.999 * pixelColor.xPosition);
     int ig = static_cast<int>(255.999 * pixelColor.yPosition);

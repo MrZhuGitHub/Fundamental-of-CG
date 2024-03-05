@@ -5,8 +5,11 @@
 #include "bvh.h"
 
 #include <memory>
+#include <functional>
 
 namespace CG {
+
+using getTextureCoordinate = std::function<bool(const vec3&, float&, float&)>;
 
 class material;
 class ray;
@@ -19,8 +22,17 @@ public:
 
     virtual std::shared_ptr<aabb> getAabb() = 0;
 
+    void setGetTextureCoordinate(getTextureCoordinate func) {
+        getTextureCoordinateFunc_ = func;
+        textureCoordinateValid_ = true;
+    }
+
 protected:
     std::shared_ptr<material> material_;
+
+    getTextureCoordinate getTextureCoordinateFunc_;
+
+    bool textureCoordinateValid_;
 };
 
 class sphere : public object {
@@ -31,23 +43,30 @@ public:
 
     std::shared_ptr<aabb> getAabb() override;
 
+    static bool getSphereTextureCoordinate(const vec3& point, float& u, float& v);
+
 private:
     vec3 center_;
     double radius_;
 }; 
 
-class ground : public object {
+class triangle : public object {
 public:
-    ground(std::shared_ptr<material> material, vec3 point, vec3 direction);
+    triangle(std::shared_ptr<material> material, vec3 point1, vec3 point2, vec3 point3);
 
     bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) override;
 
     std::shared_ptr<aabb> getAabb() override;
 
+    static bool getBarycentricCoordinate(const vec3& triangleP1, const vec3& triangleP2, const vec3& triangleP3, vec3& result);
+
 protected:
-    vec3 point_;
+    vec3 point1_;
+    vec3 point2_;
+    vec3 point3_;
     vec3 direction_;
 };
+
 }
 
 #endif

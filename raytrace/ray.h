@@ -32,9 +32,19 @@ public:
 
     void reset(vec3 origin, vec3 direction);
 
+    void setValid(bool config) {
+        valid_ = config;
+    }
+
+    bool getValid() const {
+        return valid_;
+    }
+
 private:
     vec3 origin_;
     vec3 direction_;
+    color background_;
+    bool valid_;
 };
 
 }

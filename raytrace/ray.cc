@@ -6,8 +6,8 @@ namespace CG {
 ray::ray(vec3 origin = vec3(0, 0, 0), vec3 direction = vec3(0, 0, 0))
     : origin_(origin)
     , direction_(direction)
-{
-
+    , valid_(true) {
+    background_ = color(0, 0, 0);
 }
 
 ray::ray(ray& r) {
@@ -33,6 +33,7 @@ color ray::getRayColor(std::shared_ptr<bvh> rootBvh, unsigned int launchCount) {
     auto finalScatter = std::make_shared<ray>();
     vec3 finalAttenuation;
     bool isHit = false;
+    color emit;
     for (auto& obj : objects) {
         double intersection;
         auto scatter = std::make_shared<ray>();
@@ -48,13 +49,20 @@ color ray::getRayColor(std::shared_ptr<bvh> rootBvh, unsigned int launchCount) {
     }
 
     if (isHit) {
-        color ret = finalAttenuation * finalScatter->getRayColor(rootBvh, launchCount - 1);
-        return ret;
+        if (finalScatter->getValid()) {
+            color ret = finalAttenuation * finalScatter->getRayColor(rootBvh, launchCount - 1);
+            return ret;
+        } else {
+            return finalAttenuation;
+        }
     } else {
-        vec3 unit = direction_.unit();
-        double r = 0.5*(unit.yPosition + 1);
-        color ret = (1-r)*color(1, 1, 1) + r*color(0.5, 0.7, 1.0);
-        return ret;
+        /*
+            vec3 unit = direction_.unit();
+            double r = 0.5*(unit.yPosition + 1);
+            color ret = (1-r)*color(1, 1, 1) + r*color(0.5, 0.7, 1.0);
+            return ret;
+        */
+        return background_;
     }
 }
 

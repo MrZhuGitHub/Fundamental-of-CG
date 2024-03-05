@@ -1,10 +1,12 @@
 #include "material.h"
 #include "ray.h"
 #include "camera.h"
+#include "texture.h"
 
 namespace CG {
-material::material(vec3 attenuation)
+material::material(vec3 attenuation, std::shared_ptr<texture> texture)
     : attenuation_(attenuation)
+    , texture_(texture)
 {
 
 }
@@ -21,13 +23,17 @@ vec3 material::GernerateRandomDirectionForSphere() {
     }
 }
 
-lambertian::lambertian(vec3 attenuation)
-    : material(attenuation) {
+lambertian::lambertian(vec3 attenuation, std::shared_ptr<texture> texture)
+    : material(attenuation, texture) {
 
 }
 
-bool lambertian::scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face) {
-    attenuation = attenuation_;
+bool lambertian::scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face, float u, float v) {
+    if (texture_) {
+        attenuation = texture_->lookup(u, v);
+    } else {
+        attenuation = attenuation_;
+    }
     vec3 randomDirection = GernerateRandomDirectionForSphere();
     // do {
     //     randomDirection = GernerateRandomDirectionForSphere();
@@ -38,14 +44,18 @@ bool lambertian::scatter(std::shared_ptr<ray> in, const double& interval, const 
     return true;
 }
 
-metal::metal(vec3 attenuation, double fuzzy)
-    : material(attenuation)
+metal::metal(vec3 attenuation, double fuzzy, std::shared_ptr<texture> texture)
+    : material(attenuation, texture)
     , fuzzy_(fuzzy) {
         fuzzy_ = fuzzy < 1 ? fuzzy : 1;
 }
 
-bool metal::scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face) {
-    attenuation = attenuation_;
+bool metal::scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face, float u, float v) {
+    if (texture_) {
+        attenuation = texture_->lookup(u, v);
+    } else {
+        attenuation = attenuation_;
+    }
     vec3 reflect = in->getDirection() - 2*vec3::dot(in->getDirection(), normal)*normal;
     vec3 randomDirection = GernerateRandomDirectionForSphere();
     reflect = reflect.unit() + fuzzy_*randomDirection;
@@ -56,13 +66,13 @@ bool metal::scatter(std::shared_ptr<ray> in, const double& interval, const vec3&
     return true;
 }
 
-dielectric::dielectric(vec3 attenuation, double refraction)
-    : material(attenuation),
+dielectric::dielectric(vec3 attenuation, double refraction, std::shared_ptr<texture> texture)
+    : material(attenuation, texture),
         refraction_(refraction) {
 
 }
 
-bool dielectric::scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face) {
+bool dielectric::scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face, float u, float v) {
     double ratioOfRefraction = 0;
     if (face = HitFace::HIT_FACE_OUTSIDE) {
         ratioOfRefraction = 1.0/refraction_;
@@ -84,7 +94,12 @@ bool dielectric::scatter(std::shared_ptr<ray> in, const double& interval, const 
         vec3 refractDirection = vertical + horizontal;
         out->reset(in->getPoint(interval), refractDirection);
     }
-    attenuation = attenuation_;
+    
+    if (texture_) {
+        attenuation = texture_->lookup(u, v);
+    } else {
+        attenuation = attenuation_;
+    }
     
     return true;
 }
@@ -93,6 +108,22 @@ double dielectric::fresnel(double cos, double refraction) {
     double R0 = pow(((refraction - 1.0)/(refraction + 1.0)), 2);
     double R = R0 + (1.0 - R0)*pow((1.0 - cos), 5);
     return R;
+}
+
+light::light(vec3 attenuation, std::shared_ptr<texture> texture)
+    : material(attenuation, texture) {
+
+}
+
+bool light::scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face, float u, float v) {
+    if (texture_) {
+        attenuation = texture_->lookup(u, v);
+        out->setValid(false);
+    } else {
+        attenuation = attenuation_;
+        out->setValid(false);
+    }
+    return true;
 }
 
 }
