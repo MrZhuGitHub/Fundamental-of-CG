@@ -252,7 +252,47 @@ void cornellBox() {
     cameraObject->render(objects, launchCount, samples);  
 }
 
+void cornellBox1() {
+    std::vector<std::shared_ptr<object>> objects;
+
+    std::shared_ptr<material> lambertianMaterial1 = std::make_shared<lambertian>(vec3(0.8, 0.5, 0.2));
+    std::shared_ptr<material> lambertianMaterial2 = std::make_shared<lambertian>(vec3(0.2, 0.5, 0.8));
+    std::shared_ptr<material> lambertianMaterial3 = std::make_shared<lambertian>(vec3(0.5, 0.5, 0.5));
+    std::shared_ptr<material> lightMaterial1 = std::make_shared<light>(color(100.0, 100.0, 100.0));
+
+    std::shared_ptr<object> parallelogram1 = std::make_shared<parallelogram>(lambertianMaterial1, vec3(0, 10, 0), vec3(0, 0, 0), vec3(0, 0, 10));
+    objects.push_back(parallelogram1);
+
+    std::shared_ptr<object> parallelogram2 = std::make_shared<parallelogram>(lambertianMaterial2, vec3(10, 0, 0), vec3(10, 10, 0), vec3(10, 10, 10));
+    objects.push_back(parallelogram2);
+
+    std::shared_ptr<object> parallelogram3 = std::make_shared<parallelogram>(lambertianMaterial3, vec3(0, 0, 0), vec3(0, 0, 10), vec3(10, 0, 10));
+    objects.push_back(parallelogram3);
+
+    std::shared_ptr<object> parallelogram4 = std::make_shared<parallelogram>(lambertianMaterial3, vec3(0, 0, 10), vec3(10, 0, 10), vec3(10, 10, 10));
+    objects.push_back(parallelogram4);
+
+    std::shared_ptr<object> parallelogram5 = std::make_shared<parallelogram>(lambertianMaterial3, vec3(0, 10, 0), vec3(0, 10, 10), vec3(10, 10, 10));
+    objects.push_back(parallelogram5);
+
+    std::shared_ptr<object> light1 = std::make_shared<parallelogram>(lightMaterial1, vec3(4, 9.9, 4), vec3(4, 9.9, 6), vec3(6, 9.9, 6));
+    objects.push_back(light1);
+
+    std::shared_ptr<material> metalMaterial = std::make_shared<metal>(vec3(1.0, 1.0, 1.0));
+    std::shared_ptr<object> sphere1 = std::make_shared<sphere>(metalMaterial, vec3(7.5, 2, 6), 2);
+    objects.push_back(sphere1);
+
+    std::shared_ptr<material> dielectricMaterial = std::make_shared<dielectric>(vec3(1.0, 1.0, 1.0), 3);
+    std::shared_ptr<object> sphere2 = std::make_shared<sphere>(dielectricMaterial, vec3(2.5, 2, 4), 2);
+    objects.push_back(sphere2);
+
+    std::shared_ptr<camera> cameraObject = std::make_shared<camera>(1, 1, 1000, 1000, 1, Position(5, 5, -10, 0, 0, 0));
+    uint32_t launchCount = 10;
+    uint32_t samples = 2000;
+    cameraObject->render(objects, launchCount, samples);  
+}
+
 int main() {    
-    rayTracingTheNextWeek();
+    cornellBox1();
     return 0;
 }

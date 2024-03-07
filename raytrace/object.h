@@ -67,6 +67,26 @@ protected:
     vec3 direction_;
 };
 
+class parallelogram : public object {
+public:
+    parallelogram(std::shared_ptr<material> material, vec3 point1, vec3 point2, vec3 point3);
+
+    bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) override;
+
+    std::shared_ptr<aabb> getAabb() override;
+
+    vec3 getPoint(float u, float v);    
+
+protected:
+    vec3 point1_;
+    vec3 point2_;
+    vec3 point3_;
+    vec3 point4_;
+    vec3 baseVec1_;
+    vec3 baseVec2_;
+    vec3 direction_;  
+};
+
 }
 
 #endif

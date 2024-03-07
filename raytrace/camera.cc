@@ -3,6 +3,8 @@
 #include "ray.h"
 #include "bvh.h"
 
+#include <fstream>
+
 namespace CG {
 
 camera::camera(double height, double width, uint32_t pixelWidth, uint32_t pixelHeight,
@@ -54,6 +56,8 @@ void camera::render(std::vector<std::shared_ptr<object>> objects, uint32_t launc
     }
     std::shared_ptr<bvh> rootBvh = bvh::getBvhAvlTree(aabbs);
 
+    std::atomic<int> renderingProcess(0);
+
     double* imageBuffer = (double*)malloc(pixelHeight_*pixelWidth_*3*sizeof(double));
     memset((void*)(imageBuffer), 0 ,pixelHeight_*pixelWidth_*3*sizeof(double));
     for (uint32_t yIndex = 0; yIndex < pixelHeight_; yIndex++) {
@@ -69,6 +73,8 @@ void camera::render(std::vector<std::shared_ptr<object>> objects, uint32_t launc
                 imageBuffer[(y*pixelWidth_ + x)*3] = pixelColor.xPosition;
                 imageBuffer[(y*pixelWidth_ + x)*3 + 1] = pixelColor.yPosition;
                 imageBuffer[(y*pixelWidth_ + x)*3 + 2] = pixelColor.zPosition;
+                int process = renderingProcess.fetch_add(1);
+                fprintf(stderr,"\rRendering process: %f", (double)(process*100.0)/(double)(pixelHeight_*pixelWidth_));
             };
             threadpool_.push(std::bind(renderPixelTask, xIndex, yIndex, samples));
         }
@@ -78,19 +84,27 @@ void camera::render(std::vector<std::shared_ptr<object>> objects, uint32_t launc
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
+    std::ofstream file("./image.ppm");
+    if (!file.is_open()) {
+        std::cout << "open file failed" << std::endl;
+    }
+
     for (int pixelIndex = 0; pixelIndex < (pixelWidth_*pixelHeight_); pixelIndex++) {
         double r = imageBuffer[pixelIndex*3];
         double g = imageBuffer[pixelIndex*3 + 1];
         double b = imageBuffer[pixelIndex*3 + 2];
         color pixel(r, g, b);
-        writeColor((pixelIndex%pixelWidth_), (pixelIndex/pixelWidth_), pixel);
+        writeColor((pixelIndex%pixelWidth_), (pixelIndex/pixelWidth_), pixel, file);
     }
+
+    file.close();
+
     free(imageBuffer);
 }
 
-void camera::writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color pixelColor) {
+void camera::writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color pixelColor, std::ofstream& file) {
     if (!ppmHead_) {
-        std::cout << "P3\n" << pixelWidth_ << ' ' << pixelHeight_ << "\n255\n";
+        file << "P3\n" << pixelWidth_ << ' ' << pixelHeight_ << "\n255\n";
         ppmHead_ = true;
     }
     if (pixelColor.xPosition > 1) {
@@ -105,7 +119,7 @@ void camera::writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color
     int ir = static_cast<int>(255.999 * pixelColor.xPosition);
     int ig = static_cast<int>(255.999 * pixelColor.yPosition);
     int ib = static_cast<int>(255.999 * pixelColor.zPosition);
-    std::cout << ir << ' ' << ig << ' ' << ib << '\n';
+    file << ir << ' ' << ig << ' ' << ib << '\n';
 }
 
 std::vector<std::shared_ptr<ray>> camera::getRays(const uint32_t& xPixel, const uint32_t& yPixel, uint32_t count) {

@@ -34,9 +34,12 @@ protected:
 
 class lambertian : public material {
 public:
-    lambertian(vec3 attenuation, std::shared_ptr<texture> texture = nullptr);
+    lambertian(vec3 attenuation, std::shared_ptr<texture> texture = nullptr, double albedo = 1);
 
     virtual bool scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face, float u = 0, float v = 0) override;
+
+private:
+    double albedo_;
 };
 
 class metal : public material {
@@ -64,12 +67,12 @@ private:
 
 class light : public material {
 public:
-    light(vec3 attenuation, std::shared_ptr<texture> texture = nullptr);
+    light(vec3 attenuation, vec3 face = vec3(0, -1, 0), std::shared_ptr<texture> texture = nullptr);
 
     virtual bool scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face, float u = 0, float v = 0) override;
 
 private:
-
+    vec3 face_;
 };
 }
 

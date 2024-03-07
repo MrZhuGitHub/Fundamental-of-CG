@@ -211,4 +211,96 @@ std::shared_ptr<aabb> triangle::getAabb() {
     return std::make_shared<aabb>(xMin, xMax, yMin, yMax, zMin, zMax, shared_from_this());
 }
 
+parallelogram::parallelogram(std::shared_ptr<material> material, vec3 point1, vec3 point2, vec3 point3)
+    : object(material)
+    , point1_(point1)
+    , point2_(point2)
+    , point3_(point3) {
+      baseVec1_ = point1 - point2;
+      baseVec2_ = point3 - point2;
+      point4_ = baseVec1_ + baseVec2_ + point2;
+      direction_ = vec3::cross(baseVec1_, baseVec2_);  
+}
+
+bool parallelogram::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) {
+    if (0 == vec3::dot(direction_, rayTrace->getDirection())) {
+        return false;
+    }
+
+    double r1 = rayTrace->getDirection().xPosition * direction_.xPosition
+              + rayTrace->getDirection().yPosition * direction_.yPosition
+              + rayTrace->getDirection().zPosition * direction_.zPosition;
+    double r2 = (point1_.xPosition - rayTrace->getOrigin().xPosition) * direction_.xPosition
+              + (point1_.yPosition - rayTrace->getOrigin().yPosition) * direction_.yPosition
+              + (point1_.zPosition - rayTrace->getOrigin().zPosition) * direction_.zPosition;
+    t = r2/r1;
+    if (t <= SPHERE_OFFSET) {
+        return false;
+    }
+
+    vec3 intersection = rayTrace->getPoint(t);
+    if ((!triangle::getBarycentricCoordinate(point1_, point2_, point3_, intersection))
+        && (!triangle::getBarycentricCoordinate(point1_, point4_, point3_, intersection))) {
+        return false;
+    }
+
+    if (vec3::dot(rayTrace->getDirection(), direction_) > 0) {
+        if (!material_->scatter(rayTrace, t, -direction_, scatter, attenuation, HitFace::HIT_FACE_INSIDE)) {
+            return false;
+        }
+    } else {
+        if (!material_->scatter(rayTrace, t, direction_, scatter, attenuation, HitFace::HIT_FACE_OUTSIDE)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::shared_ptr<aabb> parallelogram::getAabb() {
+    double xMin, xMax, yMin, yMax, zMin, zMax;
+
+    xMin = point1_.xPosition < point2_.xPosition ? point1_.xPosition : point2_.xPosition;
+    xMin = xMin < point3_.xPosition ? xMin : point3_.xPosition;
+    xMin = xMin < point4_.xPosition ? xMin : point4_.xPosition;
+    xMax = point1_.xPosition > point2_.xPosition ? point1_.xPosition : point2_.xPosition;
+    xMax = xMax > point3_.xPosition ? xMax : point3_.xPosition;
+    xMax = xMax > point4_.xPosition ? xMax : point4_.xPosition;
+
+    yMin = point1_.yPosition < point2_.yPosition ? point1_.yPosition : point2_.yPosition;
+    yMin = yMin < point3_.yPosition ? yMin : point3_.yPosition;
+    yMin = yMin < point4_.yPosition ? yMin : point4_.yPosition;
+    yMax = point1_.yPosition > point2_.yPosition ? point1_.yPosition : point2_.yPosition;
+    yMax = yMax > point3_.yPosition ? yMax : point3_.yPosition;
+    yMax = yMax > point4_.yPosition ? yMax : point4_.yPosition;
+
+    zMin = point1_.zPosition < point2_.zPosition ? point1_.zPosition : point2_.zPosition;
+    zMin = zMin < point3_.zPosition ? zMin : point3_.zPosition;
+    zMin = zMin < point4_.zPosition ? zMin : point4_.zPosition;
+    zMax = point1_.zPosition > point2_.zPosition ? point1_.zPosition : point2_.zPosition;
+    zMax = zMax > point3_.zPosition ? zMax : point3_.zPosition;
+    zMax = zMax > point4_.zPosition ? zMax : point4_.zPosition;
+
+    if (xMin == xMax) {
+        xMin = xMin - TRIANGLE_OFFSET;
+        xMax = xMax + TRIANGLE_OFFSET;
+    }
+
+    if (yMin == yMax) {
+        yMin = yMin - TRIANGLE_OFFSET;
+        yMax = yMax + TRIANGLE_OFFSET;
+    }
+
+    if (zMin == zMax) {
+        zMin = zMin - TRIANGLE_OFFSET;
+        zMax = zMax + TRIANGLE_OFFSET;
+    }
+
+    return std::make_shared<aabb>(xMin, xMax, yMin, yMax, zMin, zMax, shared_from_this());
+}
+
+vec3 parallelogram::getPoint(float u, float v) {
+    vec3 point = u * baseVec1_ + v * baseVec2_ + point2_;
+    return point;
+}
+
 }

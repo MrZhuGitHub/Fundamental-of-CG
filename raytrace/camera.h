@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <atomic>
 
 #include "../Common/MvpTransform.hpp"
 #include "../Common/loadStlMode.hpp"
@@ -22,7 +23,7 @@ public:
     void render(std::vector<std::shared_ptr<object>> objects, uint32_t launchCount, uint32_t samples);
 
 private:
-    void writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color pixelColor);
+    void writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color pixelColor, std::ofstream& file);
 
     std::vector<std::shared_ptr<ray>> getRays(const uint32_t& xPixel, const uint32_t& yPixel, uint32_t count);
 

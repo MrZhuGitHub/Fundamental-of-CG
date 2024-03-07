@@ -23,8 +23,9 @@ vec3 material::GernerateRandomDirectionForSphere() {
     }
 }
 
-lambertian::lambertian(vec3 attenuation, std::shared_ptr<texture> texture)
-    : material(attenuation, texture) {
+lambertian::lambertian(vec3 attenuation, std::shared_ptr<texture> texture, double albedo = 1)
+    : material(attenuation, texture)
+    , albedo_(albedo) {
 
 }
 
@@ -110,8 +111,9 @@ double dielectric::fresnel(double cos, double refraction) {
     return R;
 }
 
-light::light(vec3 attenuation, std::shared_ptr<texture> texture)
-    : material(attenuation, texture) {
+light::light(vec3 attenuation, vec3 face, std::shared_ptr<texture> texture)
+    : material(attenuation, texture)
+    , face_(face) {
 
 }
 
@@ -120,7 +122,11 @@ bool light::scatter(std::shared_ptr<ray> in, const double& interval, const vec3&
         attenuation = texture_->lookup(u, v);
         out->setValid(false);
     } else {
-        attenuation = attenuation_;
+        if (vec3::dot(face_, in->getDirection()) < 0) {
+            attenuation = attenuation_;
+        } else {
+            attenuation = vec3(0, 0, 0);
+        }
         out->setValid(false);
     }
     return true;
