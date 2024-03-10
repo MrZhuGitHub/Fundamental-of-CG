@@ -38,7 +38,7 @@ color ray::getRayColor(std::shared_ptr<bvh> rootBvh, unsigned int launchCount) {
         double intersection;
         auto scatter = std::make_shared<ray>();
         vec3 attenuation;
-        if (obj->hit(shared_from_this(), intersection, scatter, attenuation)) {
+        if (obj->hit(shared_from_this(), intersection, scatter, attenuation, launchCount)) {
             if (intersection < finalIntersection) {
                 finalIntersection = intersection;
                 finalScatter = scatter;

@@ -18,13 +18,21 @@ class object : public std::enable_shared_from_this<object> {
 public:
     object(std::shared_ptr<material> material);
 
-    virtual bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) = 0;
+    virtual bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation, unsigned int depth) = 0;
 
     virtual std::shared_ptr<aabb> getAabb() = 0;
 
     void setGetTextureCoordinate(getTextureCoordinate func) {
         getTextureCoordinateFunc_ = func;
         textureCoordinateValid_ = true;
+    }
+
+    virtual vec3 generateRandomSample(vec3 startPoint) {
+        return vec3(0 , 0 , 0);
+    }
+
+    virtual double getRandomSamplePdf(vec3 startPoint, vec3 endPoint) {
+        return 0;
     }
 
 protected:
@@ -39,7 +47,7 @@ class sphere : public object {
 public:
     sphere(std::shared_ptr<material> material, vec3 center, double radius);
 
-    bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) override;
+    bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation, unsigned int depth) override;
 
     std::shared_ptr<aabb> getAabb() override;
 
@@ -54,7 +62,7 @@ class triangle : public object {
 public:
     triangle(std::shared_ptr<material> material, vec3 point1, vec3 point2, vec3 point3);
 
-    bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) override;
+    bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation, unsigned int depth) override;
 
     std::shared_ptr<aabb> getAabb() override;
 
@@ -71,11 +79,17 @@ class parallelogram : public object {
 public:
     parallelogram(std::shared_ptr<material> material, vec3 point1, vec3 point2, vec3 point3);
 
-    bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) override;
+    bool hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation, unsigned int depth) override;
+
+    bool hit(std::shared_ptr<ray> rayTrace, double& t);
 
     std::shared_ptr<aabb> getAabb() override;
 
-    vec3 getPoint(float u, float v);    
+    vec3 getPoint(float u, float v);
+
+    virtual vec3 generateRandomSample(vec3 startPoint) override;
+
+    virtual double getRandomSamplePdf(vec3 startPoint, vec3 endPoint) override;
 
 protected:
     vec3 point1_;

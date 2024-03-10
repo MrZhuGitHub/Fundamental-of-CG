@@ -42,7 +42,7 @@ sphere::sphere(std::shared_ptr<material> material, vec3 center, double radius)
 
 }
 
-bool sphere::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation)
+bool sphere::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation, unsigned int depth)
 {
     vec3 origin = rayTrace->getOrigin();
     vec3 direction = rayTrace->getDirection();
@@ -94,12 +94,12 @@ bool sphere::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> 
     if (vec3::dot(normal, direction) > 0) {
         face = HitFace::HIT_FACE_INSIDE;
         normal = -normal;
-        if (!material_->scatter(rayTrace, t, normal, scatter, attenuation, face, u, v)) {
+        if (!material_->scatter(rayTrace, t, normal, scatter, attenuation, face, depth, u, v)) {
             return false;
         }
     } else {
         face = HitFace::HIT_FACE_OUTSIDE;
-        if (!material_->scatter(rayTrace, t, normal, scatter, attenuation, face, u, v)) {
+        if (!material_->scatter(rayTrace, t, normal, scatter, attenuation, face, depth, u, v)) {
             return false;
         }
     }
@@ -125,7 +125,7 @@ triangle::triangle(std::shared_ptr<material> material, vec3 point1, vec3 point2,
     direction_ = vec3::cross(vec12, vec13);
 }
 
-bool triangle::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) {
+bool triangle::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation, unsigned int depth) {
     if (0 == vec3::dot(direction_, rayTrace->getDirection())) {
         return false;
     }
@@ -147,11 +147,11 @@ bool triangle::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray
     }
 
     if (vec3::dot(rayTrace->getDirection(), direction_) > 0) {
-        if (!material_->scatter(rayTrace, t, -direction_, scatter, attenuation, HitFace::HIT_FACE_INSIDE)) {
+        if (!material_->scatter(rayTrace, t, -direction_, scatter, attenuation, HitFace::HIT_FACE_INSIDE, depth)) {
             return false;
         }
     } else {
-        if (!material_->scatter(rayTrace, t, direction_, scatter, attenuation, HitFace::HIT_FACE_OUTSIDE)) {
+        if (!material_->scatter(rayTrace, t, direction_, scatter, attenuation, HitFace::HIT_FACE_OUTSIDE, depth)) {
             return false;
         }
     }
@@ -222,7 +222,7 @@ parallelogram::parallelogram(std::shared_ptr<material> material, vec3 point1, ve
       direction_ = vec3::cross(baseVec1_, baseVec2_);  
 }
 
-bool parallelogram::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation) {
+bool parallelogram::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_ptr<ray> scatter, vec3& attenuation, unsigned int depth) {
     if (0 == vec3::dot(direction_, rayTrace->getDirection())) {
         return false;
     }
@@ -245,14 +245,39 @@ bool parallelogram::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_pt
     }
 
     if (vec3::dot(rayTrace->getDirection(), direction_) > 0) {
-        if (!material_->scatter(rayTrace, t, -direction_, scatter, attenuation, HitFace::HIT_FACE_INSIDE)) {
+        if (!material_->scatter(rayTrace, t, -direction_, scatter, attenuation, HitFace::HIT_FACE_INSIDE, depth)) {
             return false;
         }
     } else {
-        if (!material_->scatter(rayTrace, t, direction_, scatter, attenuation, HitFace::HIT_FACE_OUTSIDE)) {
+        if (!material_->scatter(rayTrace, t, direction_, scatter, attenuation, HitFace::HIT_FACE_OUTSIDE, depth)) {
             return false;
         }
     }
+    return true;
+}
+
+bool parallelogram::hit(std::shared_ptr<ray> rayTrace, double& t) {
+    if (0 == vec3::dot(direction_, rayTrace->getDirection())) {
+        return false;
+    }
+
+    double r1 = rayTrace->getDirection().xPosition * direction_.xPosition
+              + rayTrace->getDirection().yPosition * direction_.yPosition
+              + rayTrace->getDirection().zPosition * direction_.zPosition;
+    double r2 = (point1_.xPosition - rayTrace->getOrigin().xPosition) * direction_.xPosition
+              + (point1_.yPosition - rayTrace->getOrigin().yPosition) * direction_.yPosition
+              + (point1_.zPosition - rayTrace->getOrigin().zPosition) * direction_.zPosition;
+    t = r2/r1;
+    if (t <= SPHERE_OFFSET) {
+        return false;
+    }
+
+    vec3 intersection = rayTrace->getPoint(t);
+    if ((!triangle::getBarycentricCoordinate(point1_, point2_, point3_, intersection))
+        && (!triangle::getBarycentricCoordinate(point1_, point4_, point3_, intersection))) {
+        return false;
+    }
+
     return true;
 }
 
@@ -301,6 +326,26 @@ std::shared_ptr<aabb> parallelogram::getAabb() {
 vec3 parallelogram::getPoint(float u, float v) {
     vec3 point = u * baseVec1_ + v * baseVec2_ + point2_;
     return point;
+}
+
+vec3 parallelogram::generateRandomSample(vec3 startPoint) {
+    float u = (float)(rand()%10000)/10000.0;
+    float v = (float)(rand()%10000)/10000.0;
+
+    vec3 endPoint = getPoint(u, v);
+    vec3 result = endPoint - startPoint;
+    return result;
+}
+
+double parallelogram::getRandomSamplePdf(vec3 startPoint, vec3 endPoint) {
+    auto sampleRay = std::make_shared<ray>(startPoint, endPoint - startPoint);
+    double t = 0;
+    bool intersect = hit(sampleRay, t);
+    if (intersect) {
+        return (1.0/(vec3::cross(baseVec1_, baseVec2_).length()));
+    } else {
+        return 0;
+    }
 }
 
 }

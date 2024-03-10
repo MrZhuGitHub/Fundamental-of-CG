@@ -2,6 +2,7 @@
 #define _COMMON_H_
 
 #include "math.h"
+#include "../Common/MvpTransform.hpp"
 
 namespace CG
 {

@@ -107,6 +107,9 @@ void camera::writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color
         file << "P3\n" << pixelWidth_ << ' ' << pixelHeight_ << "\n255\n";
         ppmHead_ = true;
     }
+    
+    linearToGamma(pixelColor);
+
     if (pixelColor.xPosition > 1) {
         pixelColor.xPosition = 1;
     }

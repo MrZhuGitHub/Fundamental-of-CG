@@ -29,6 +29,13 @@ private:
 
     vec3 cameraTransform(vec3 sample);
 
+    inline void linearToGamma(vec3& linearComponent)
+    {
+        linearComponent.xPosition = sqrt(linearComponent.xPosition);
+        linearComponent.yPosition = sqrt(linearComponent.yPosition);
+        linearComponent.zPosition = sqrt(linearComponent.zPosition);
+    }
+
 private:
     double height_;
     double width_;
