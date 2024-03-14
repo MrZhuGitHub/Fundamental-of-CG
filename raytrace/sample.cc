@@ -21,7 +21,11 @@ vec3 HemisphereCosSample::generateRandomSample(vec3 startPoint) {
 double HemisphereCosSample::getRandomSamplePdf(vec3 startPoint, vec3 endPoint) {
     vec3 direction = endPoint - startPoint;
     double result = vec3::dot(direction.unit(), normal_.unit())/PI;
-    return result;
+    if (result < 0) {
+        return 0;
+    } else {
+        return result;
+    }
 }
 
 }

@@ -45,7 +45,7 @@ public:
     };
 
 private:
-    double mixturePdf(vec3 startPoint, vec3 endPoint);
+    double mixturePdf(vec3 startPoint, vec3 endPoint, vec3 normal);
 
     vec3 mixtureVec(vec3 startPoint);
 

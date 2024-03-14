@@ -48,40 +48,50 @@ bool lambertian::scatter(std::shared_ptr<ray> in, const double& interval, const 
     if (0 == (rand()%2)) {
         //light sample
         vec3 endPoint = mixtureVec(startPoint);
-        lightSamplePdf = mixturePdf(startPoint, endPoint);
-        double cosAngle = vec3::dot((endPoint - startPoint).unit(), normal.unit());
-        sampleScatter = (cosAngle * lambertianBrdf)/pow((endPoint - startPoint).length(), 2);
+        lightSamplePdf = mixturePdf(startPoint, endPoint, normal.unit());
+
+        // double cosAngle = vec3::dot((endPoint - startPoint).unit(), normal.unit());
+        // sampleScatter = (cosAngle * lambertianBrdf)/pow((endPoint - startPoint).length(), 2);
 
         HemisphereCosSample hemisphereCosSample(startPoint, normal.unit());
         lambertianSamplePdf = hemisphereCosSample.getRandomSamplePdf(startPoint, endPoint);
+
+        out->reset(in->getPoint(interval), (endPoint - startPoint).unit());
     } else {
         //lambertian sample
         HemisphereCosSample hemisphereCosSample(startPoint, normal.unit());
         vec3 endPoint = hemisphereCosSample.generateRandomSample(startPoint);
         lambertianSamplePdf = hemisphereCosSample.getRandomSamplePdf(startPoint, endPoint);
-        double cosAngle = vec3::dot((endPoint - startPoint).unit(), normal.unit());
-        sampleScatter = cosAngle * lambertianBrdf;
+        // double cosAngle = vec3::dot((endPoint - startPoint).unit(), normal.unit());
+        // sampleScatter = cosAngle * lambertianBrdf;
 
-        lightSamplePdf = mixturePdf(startPoint, endPoint);
+        lightSamplePdf = mixturePdf(startPoint, endPoint, normal.unit());
+
+        out->reset(in->getPoint(interval), (endPoint - startPoint).unit());
     }
 
     double mixturePdf = 0.5 * lambertianSamplePdf + 0.5 * lightSamplePdf;
-    attenuation = (albedo_*sampleScatter*attenuation)/mixturePdf;
-
-    return true;
+    // attenuation = (albedo_*sampleScatter*attenuation)/mixturePdf;
+    if (mixturePdf > 0) {
+        attenuation = (albedo_*attenuation)/mixturePdf;
+        return true;
+    } else {
+        return false;
+    }
 }
 
-double lambertian::mixturePdf(vec3 startPoint, vec3 endPoint) {
+double lambertian::mixturePdf(vec3 startPoint, vec3 endPoint, vec3 normal) {
     double pdfs = 0;
     double lightObjectNum = (double)lightObjects_.size();
     for (auto& lightObject : lightObjects_) {
-        pdfs = pdfs + lightObject->getRandomSamplePdf(startPoint, endPoint);
+        pdfs = pdfs + lightObject->getRandomSamplePdf(startPoint, endPoint, normal);
     }
     return (pdfs/lightObjectNum);
 }
 
 vec3 lambertian::mixtureVec(vec3 startPoint) {
-    int index = rand()%(lightObjects_.size() - 1);
+    int objectNum = lightObjects_.size();
+    int index = rand()%objectNum;
     return lightObjects_[index]->generateRandomSample(startPoint);
 }
 

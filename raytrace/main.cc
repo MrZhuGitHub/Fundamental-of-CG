@@ -258,7 +258,7 @@ void cornellBox1() {
     std::shared_ptr<material> lambertianMaterial1 = std::make_shared<lambertian>(vec3(0.8, 0.5, 0.2));
     std::shared_ptr<material> lambertianMaterial2 = std::make_shared<lambertian>(vec3(0.2, 0.5, 0.8));
     std::shared_ptr<material> lambertianMaterial3 = std::make_shared<lambertian>(vec3(0.5, 0.5, 0.5));
-    std::shared_ptr<material> lightMaterial1 = std::make_shared<light>(color(100.0, 100.0, 100.0));
+    std::shared_ptr<material> lightMaterial1 = std::make_shared<light>(color(10.0, 10.0, 10.0));
 
     std::shared_ptr<object> parallelogram1 = std::make_shared<parallelogram>(lambertianMaterial1, vec3(0, 10, 0), vec3(0, 0, 0), vec3(0, 0, 10));
     objects.push_back(parallelogram1);
@@ -286,9 +286,16 @@ void cornellBox1() {
     std::shared_ptr<object> sphere2 = std::make_shared<sphere>(dielectricMaterial, vec3(2.5, 2, 4), 2);
     objects.push_back(sphere2);
 
+    lambertian* lm1 = dynamic_cast<lambertian*>(lambertianMaterial1.get());
+    lm1->addLightObject(light1);
+    lambertian* lm2 = dynamic_cast<lambertian*>(lambertianMaterial2.get());
+    lm2->addLightObject(light1);
+    lambertian* lm3 = dynamic_cast<lambertian*>(lambertianMaterial3.get());
+    lm3->addLightObject(light1);
+
     std::shared_ptr<camera> cameraObject = std::make_shared<camera>(1, 1, 1000, 1000, 1, Position(5, 5, -10, 0, 0, 0));
     uint32_t launchCount = 10;
-    uint32_t samples = 2000;
+    uint32_t samples = 1000;
     cameraObject->render(objects, launchCount, samples);  
 }
 

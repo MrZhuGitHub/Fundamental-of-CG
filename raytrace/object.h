@@ -31,7 +31,7 @@ public:
         return vec3(0 , 0 , 0);
     }
 
-    virtual double getRandomSamplePdf(vec3 startPoint, vec3 endPoint) {
+    virtual double getRandomSamplePdf(vec3 startPoint, vec3 endPoint,  vec3 normal) {
         return 0;
     }
 
@@ -89,7 +89,7 @@ public:
 
     virtual vec3 generateRandomSample(vec3 startPoint) override;
 
-    virtual double getRandomSamplePdf(vec3 startPoint, vec3 endPoint) override;
+    virtual double getRandomSamplePdf(vec3 startPoint, vec3 endPoint, vec3 normal) override;
 
 protected:
     vec3 point1_;

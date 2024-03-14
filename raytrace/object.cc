@@ -337,12 +337,19 @@ vec3 parallelogram::generateRandomSample(vec3 startPoint) {
     return result;
 }
 
-double parallelogram::getRandomSamplePdf(vec3 startPoint, vec3 endPoint) {
+double parallelogram::getRandomSamplePdf(vec3 startPoint, vec3 endPoint, vec3 normal) {
+    if (vec3::dot((endPoint - startPoint), direction_) >= 0) {
+        return 0;
+    }
     auto sampleRay = std::make_shared<ray>(startPoint, endPoint - startPoint);
     double t = 0;
     bool intersect = hit(sampleRay, t);
     if (intersect) {
-        return (1.0/(vec3::cross(baseVec1_, baseVec2_).length()));
+        double cosAngle = vec3::dot((endPoint - startPoint).unit(), normal.unit());
+        if (cosAngle <= 0) {
+            return 0;
+        }
+        return (pow((endPoint - startPoint).length(), 2)/(cosAngle * (vec3::cross(baseVec1_, baseVec2_).length())));
     } else {
         return 0;
     }
