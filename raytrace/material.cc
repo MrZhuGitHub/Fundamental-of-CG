@@ -6,6 +6,9 @@
 #include "sample.h"
 
 namespace CG {
+
+bool lambertian::kMixtureSample_ = true;
+
 material::material(vec3 attenuation, std::shared_ptr<texture> texture)
     : attenuation_(attenuation)
     , texture_(texture)
@@ -32,51 +35,69 @@ lambertian::lambertian(vec3 attenuation, std::shared_ptr<texture> texture, doubl
 }
 
 bool lambertian::scatter(std::shared_ptr<ray> in, const double& interval, const vec3& normal, std::shared_ptr<ray> out, vec3& attenuation, HitFace face, unsigned int depth, float u, float v) {
-    if (texture_) {
-        attenuation = texture_->lookup(u, v);
+    if (!lightObjects_.empty()) {
+        if (lambertian::kMixtureSample_) {
+            //mixture sample
+            vec3 startPoint = in->getPoint(interval);
+
+            double lambertianSamplePdf, lightSamplePdf;
+
+            double cosAngel = 0;
+            double brdf = 1.0/(double)(PI);
+
+            if (rand_double() > 0.5) {
+                //light sample
+                vec3 endPoint = mixtureVec(startPoint);
+                lightSamplePdf = mixturePdf(startPoint, endPoint, normal.unit());
+                HemisphereCosSample hemisphereCosSample(startPoint, normal.unit());
+                lambertianSamplePdf = hemisphereCosSample.getRandomSamplePdf(startPoint, endPoint);
+                out->reset(in->getPoint(interval), (endPoint - startPoint).unit());
+                cosAngel = vec3::dot((endPoint - startPoint).unit(), normal.unit());
+                if (cosAngel < 0) cosAngel = 0;
+            } else {
+                //lambertian sample
+                HemisphereCosSample hemisphereCosSample(startPoint, normal.unit());
+                vec3 endPoint = hemisphereCosSample.generateRandomSample(startPoint);
+                lambertianSamplePdf = hemisphereCosSample.getRandomSamplePdf(startPoint, endPoint);
+                lightSamplePdf = mixturePdf(startPoint, endPoint, normal.unit());
+                out->reset(in->getPoint(interval), (endPoint - startPoint).unit());
+                cosAngel = vec3::dot((endPoint - startPoint).unit(), normal.unit());
+                if (cosAngel < 0) cosAngel = 0;
+            }
+
+            double mixturePdf = 0.5 * lambertianSamplePdf + 0.5 * lightSamplePdf;
+            if (texture_) {
+                auto textureAttenuation = texture_->lookup(u, v);
+                attenuation = (albedo_ * brdf * cosAngel * textureAttenuation)/mixturePdf;
+            } else {
+                attenuation = (albedo_ * brdf * cosAngel * attenuation_)/mixturePdf;
+            }
+            
+            return true;
+        } else {
+            //only sample light
+            vec3 startPoint = in->getPoint(interval);
+            vec3 endPoint = mixtureVec(startPoint);
+            double lightSamplePdf = mixturePdf(startPoint, endPoint, normal.unit());
+            double brdf = 1.0/(double)(PI);
+            double cosAngel = vec3::dot((endPoint - startPoint).unit(), normal.unit());
+            if (cosAngel < 0) cosAngel = 0;
+            attenuation = (albedo_ * brdf * cosAngel * attenuation_)/lightSamplePdf;
+            out->reset(in->getPoint(interval), (endPoint - startPoint).unit());
+            return true;
+        }
     } else {
-        attenuation = attenuation_;
-    }
-
-    vec3 startPoint = in->getPoint(interval);
-
-    double sampleScatter;
-    double lambertianSamplePdf, lightSamplePdf;
-
-    double lambertianBrdf = (1.0/PI);
-
-    if (0 == (rand()%2)) {
-        //light sample
-        vec3 endPoint = mixtureVec(startPoint);
-        lightSamplePdf = mixturePdf(startPoint, endPoint, normal.unit());
-
-        // double cosAngle = vec3::dot((endPoint - startPoint).unit(), normal.unit());
-        // sampleScatter = (cosAngle * lambertianBrdf)/pow((endPoint - startPoint).length(), 2);
-
-        HemisphereCosSample hemisphereCosSample(startPoint, normal.unit());
-        lambertianSamplePdf = hemisphereCosSample.getRandomSamplePdf(startPoint, endPoint);
-
-        out->reset(in->getPoint(interval), (endPoint - startPoint).unit());
-    } else {
-        //lambertian sample
-        HemisphereCosSample hemisphereCosSample(startPoint, normal.unit());
-        vec3 endPoint = hemisphereCosSample.generateRandomSample(startPoint);
-        lambertianSamplePdf = hemisphereCosSample.getRandomSamplePdf(startPoint, endPoint);
-        // double cosAngle = vec3::dot((endPoint - startPoint).unit(), normal.unit());
-        // sampleScatter = cosAngle * lambertianBrdf;
-
-        lightSamplePdf = mixturePdf(startPoint, endPoint, normal.unit());
-
-        out->reset(in->getPoint(interval), (endPoint - startPoint).unit());
-    }
-
-    double mixturePdf = 0.5 * lambertianSamplePdf + 0.5 * lightSamplePdf;
-    // attenuation = (albedo_*sampleScatter*attenuation)/mixturePdf;
-    if (mixturePdf > 0) {
-        attenuation = (albedo_*attenuation)/mixturePdf;
+        //uniform sample
+        if (texture_) {
+            attenuation = texture_->lookup(u, v);
+        } else {
+            attenuation = attenuation_;
+        }
+        vec3 randomDirection = GernerateRandomDirectionForSphere();
+        vec3 direction = normal.unit() + randomDirection;
+        vec3 origin = in->getPoint(interval);
+        out->reset(origin, direction.unit());
         return true;
-    } else {
-        return false;
     }
 }
 
@@ -150,7 +171,7 @@ bool dielectric::scatter(std::shared_ptr<ray> in, const double& interval, const 
         due to software architecture limitations, this feature is temporarily not supported.
         */
         currentFresnel = fresnel(cosIn, ratioOfRefraction);
-        probability = (double)(rand()%10000)/10000.0; // Russian gambling algorithm
+        probability = rand_double(); // Russian gambling algorithm
         if (currentFresnel > probability) {
             //reflect
             vec3 reflect = in->getDirection() - 2*vec3::dot(in->getDirection(), normal)*normal;

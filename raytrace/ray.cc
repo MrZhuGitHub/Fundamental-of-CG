@@ -3,6 +3,9 @@
 #include "bvh.h"
 
 namespace CG {
+
+bool ray::kSky_ = false;
+
 ray::ray(vec3 origin = vec3(0, 0, 0), vec3 direction = vec3(0, 0, 0))
     : origin_(origin)
     , direction_(direction)
@@ -56,13 +59,14 @@ color ray::getRayColor(std::shared_ptr<bvh> rootBvh, unsigned int launchCount) {
             return finalAttenuation;
         }
     } else {
-        /*
+        if (ray::kSky_) {
             vec3 unit = direction_.unit();
             double r = 0.5*(unit.yPosition + 1);
             color ret = (1-r)*color(1, 1, 1) + r*color(0.5, 0.7, 1.0);
-            return ret;
-        */
-        return background_;
+            return ret;            
+        } else {
+            return background_;
+        }
     }
 }
 

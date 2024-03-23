@@ -52,6 +52,7 @@ private:
 private:
     double albedo_;
     std::vector<std::shared_ptr<object>> lightObjects_;
+    static bool kMixtureSample_;
 };
 
 class metal : public material {

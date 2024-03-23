@@ -6,20 +6,8 @@
 
 using namespace CG;
 
-void RayTracingInOneWeekend() {
+void RayTracingInOneWeekend(uint32_t samples = 20) {
     std::vector<std::shared_ptr<object>> objects;
-
-    // std::shared_ptr<material> lambertianMaterial = std::make_shared<lambertian>(vec3(0.8, 0.5, 0.7));
-    // std::shared_ptr<object> sphere1 = std::make_shared<sphere>(lambertianMaterial, vec3(-20, 10, 15), 10);
-    // objects.push_back(sphere1);
-
-    // std::shared_ptr<material> lambertianMateria2 = std::make_shared<lambertian>(vec3(0.5, 0.5, 0.5));
-    // std::shared_ptr<object> sphere2 = std::make_shared<sphere>(lambertianMateria2, vec3(20, 10, -15), 10);
-    // objects.push_back(sphere2);
-
-    // std::shared_ptr<material> lambertianMateria3 = std::make_shared<lambertian>(vec3(0.2, 0.4, 0.9));
-    // std::shared_ptr<object> sphere3 = std::make_shared<sphere>(lambertianMateria3, vec3(0, 10, 0), 10);
-    // objects.push_back(sphere3);
 
     std::shared_ptr<material> lambertianMaterial1 = std::make_shared<lambertian>(vec3(0.5, 0.5, 0.5));
     std::shared_ptr<object> ground1 = std::make_shared<sphere>(lambertianMaterial1, vec3(0, -100000, 0), 100000);
@@ -78,18 +66,16 @@ void RayTracingInOneWeekend() {
     std::shared_ptr<camera> cameraObject = std::make_shared<camera>(1, 1.6, 2880, 1800, 1, Position(80, 10, 0, 0, -90, 0));
 
     uint32_t launchCount = 10;
-    uint32_t samples = 20;
-    cameraObject->render(objects, launchCount, samples);
+    printf("render RayTracingInOneWeekend: samples = %d, launchCount = %d\n", samples, launchCount);
+    cameraObject->render(objects, launchCount, samples, "./RayTracingInOneWeekend.ppm", true);
 }
 
-void rayTracingTheNextWeek() {
+void rayTracingTheNextWeek(uint32_t samples = 1000) {
     std::vector<std::shared_ptr<object>> objects;
 
-    std::shared_ptr<material> light1 = std::make_shared<light>(color(10.0, 10.0, 10.0));
-    std::shared_ptr<object> triangle1 = std::make_shared<triangle>(light1, vec3(30, 60, 30), vec3(30, 60, 70), vec3(70, 60, 30));
-    std::shared_ptr<object> triangle2 = std::make_shared<triangle>(light1, vec3(70, 60, 70), vec3(30, 60, 70), vec3(70, 60, 30));
-    objects.push_back(triangle1);
-    objects.push_back(triangle2);
+    std::shared_ptr<material> light1 = std::make_shared<light>(color(1, 1, 1));
+    std::shared_ptr<object> parallelogram1 = std::make_shared<parallelogram>(light1, vec3(40, 70, 25), vec3(40, 70, 40), vec3(55, 70, 40));
+    objects.push_back(parallelogram1);
 
     std::shared_ptr<texture> texture1 = std::make_shared<texture>();
     if (!texture1->loadTexture("//opengles//Fundamental-of-CG//raytrace//earthmap.jpg")) {
@@ -97,7 +83,7 @@ void rayTracingTheNextWeek() {
         return;
     }
     std::shared_ptr<material> lambertianMaterial2 = std::make_shared<lambertian>(vec3(0.9, 0.9, 0.9), texture1);
-    std::shared_ptr<object> sphere3 = std::make_shared<sphere>(lambertianMaterial2, vec3(50, 25, 30), 10);
+    std::shared_ptr<object> sphere3 = std::make_shared<sphere>(lambertianMaterial2, vec3(50, 21, 25), 10);
     sphere3->setGetTextureCoordinate(&sphere::getSphereTextureCoordinate);
     objects.push_back(sphere3);
 
@@ -105,16 +91,16 @@ void rayTracingTheNextWeek() {
     std::shared_ptr<object> sphere1 = std::make_shared<sphere>(metalMaterial, vec3(30, 32, 20), 10);
     objects.push_back(sphere1);
 
-    std::shared_ptr<material> dielectricMaterial = std::make_shared<dielectric>(vec3(1.0, 1.0, 1.0), 1.5);
-    std::shared_ptr<object> sphere2 = std::make_shared<sphere>(dielectricMaterial, vec3(70, 18, 10), 8);
+    std::shared_ptr<material> dielectricMaterial = std::make_shared<dielectric>(vec3(1.0, 1.0, 1.0), 3);
+    std::shared_ptr<object> sphere2 = std::make_shared<sphere>(dielectricMaterial, vec3(75, 18, 10), 8);
     objects.push_back(sphere2);
 
     std::shared_ptr<material> metalMateria2 = std::make_shared<metal>(vec3(0.9, 0.9, 0.9), 0.2);
-    std::shared_ptr<object> sphere4 = std::make_shared<sphere>(metalMateria2, vec3(10, 28, 15), 10);
+    std::shared_ptr<object> sphere4 = std::make_shared<sphere>(metalMateria2, vec3(10, 28, 10), 10);
     objects.push_back(sphere4);
 
     std::shared_ptr<material> metalMateria3 = std::make_shared<metal>(vec3(0.9, 0.9, 0.9), 0.8);
-    std::shared_ptr<object> sphere5 = std::make_shared<sphere>(metalMateria3, vec3(20, 45, 80), 10);
+    std::shared_ptr<object> sphere5 = std::make_shared<sphere>(metalMateria3, vec3(30, 50, 60), 10);
     objects.push_back(sphere5);
 
     std::shared_ptr<material> lambertianMaterial1 = std::make_shared<lambertian>(vec3(0.48, 0.83, 0.53));
@@ -163,13 +149,20 @@ void rayTracingTheNextWeek() {
         }
     }
 
+    lambertian* lm1 = dynamic_cast<lambertian*>(lambertianMaterial1.get());
+    lm1->addLightObject(parallelogram1);
+    lambertian* lm2 = dynamic_cast<lambertian*>(lambertianMaterial2.get());
+    lm2->addLightObject(parallelogram1);
+    lambertian* lm10 = dynamic_cast<lambertian*>(lambertianMaterial10.get());
+    lm10->addLightObject(parallelogram1);
+
     std::shared_ptr<camera> cameraObject = std::make_shared<camera>(1, 1.6, 1600, 1000, 1.5, Position(85, 30, -80, 0, -18, 0));
-    uint32_t launchCount = 20;
-    uint32_t samples = 10000;
-    cameraObject->render(objects, launchCount, samples);  
+    uint32_t launchCount = 10;
+    printf("render rayTracingTheNextWeek: samples = %d, launchCount = %d\n", samples, launchCount);
+    cameraObject->render(objects, launchCount, samples, "./rayTracingTheNextWeek.ppm");  
 }
 
-void renderEarth() {
+void renderEarth(uint32_t samples = 100) {
     std::vector<std::shared_ptr<object>> objects;
 
     std::shared_ptr<texture> texture1 = std::make_shared<texture>();
@@ -200,65 +193,17 @@ void renderEarth() {
     std::shared_ptr<camera> cameraObject = std::make_shared<camera>(1, 1.6, 1600, 1000, 1.5, Position(80, 10, 0, 0, -90, 0));
 
     uint32_t launchCount = 10;
-    uint32_t samples = 100;
-    cameraObject->render(objects, launchCount, samples);   
+    printf("render earth: samples = %d, launchCount = %d\n", samples, launchCount);
+    cameraObject->render(objects, launchCount, samples, "./earth.ppm");   
 }
 
-void rayTracingTheRestOfYourLife() {
-
-}
-
-void cornellBox() {
+void rayTracingTheRestOfYourLife(uint32_t samples = 1000) {
     std::vector<std::shared_ptr<object>> objects;
 
     std::shared_ptr<material> lambertianMaterial1 = std::make_shared<lambertian>(vec3(0.8, 0.5, 0.2));
     std::shared_ptr<material> lambertianMaterial2 = std::make_shared<lambertian>(vec3(0.2, 0.5, 0.8));
     std::shared_ptr<material> lambertianMaterial3 = std::make_shared<lambertian>(vec3(0.5, 0.5, 0.5));
-    std::shared_ptr<material> lightMaterial1 = std::make_shared<light>(color(100.0, 100.0, 100.0));
-
-    std::shared_ptr<object> triangle1 = std::make_shared<triangle>(lambertianMaterial1, vec3(0, 0, 0), vec3(0, 10, 0), vec3(0, 10, 10));
-    std::shared_ptr<object> triangle2 = std::make_shared<triangle>(lambertianMaterial1, vec3(0, 0, 0), vec3(0, 0, 10), vec3(0, 10, 10));
-    objects.push_back(triangle1);
-    objects.push_back(triangle2);
-
-    std::shared_ptr<object> triangle3 = std::make_shared<triangle>(lambertianMaterial2, vec3(10, 0, 0), vec3(10, 10, 0), vec3(10, 10, 10));
-    std::shared_ptr<object> triangle4 = std::make_shared<triangle>(lambertianMaterial2, vec3(10, 0, 0), vec3(10, 0, 10), vec3(10, 10, 10));
-    objects.push_back(triangle3);
-    objects.push_back(triangle4);
-
-    std::shared_ptr<object> triangle5 = std::make_shared<triangle>(lambertianMaterial3, vec3(0, 0, 0), vec3(0, 0, 10), vec3(10, 0, 10));
-    std::shared_ptr<object> triangle6 = std::make_shared<triangle>(lambertianMaterial3, vec3(0, 0, 0), vec3(10, 0, 0), vec3(10, 0, 10));
-    objects.push_back(triangle5);
-    objects.push_back(triangle6);
-
-    std::shared_ptr<object> triangle7 = std::make_shared<triangle>(lambertianMaterial3, vec3(0, 0, 10), vec3(10, 0, 10), vec3(10, 10, 10));
-    std::shared_ptr<object> triangle8 = std::make_shared<triangle>(lambertianMaterial3, vec3(0, 0, 10), vec3(0, 10, 10), vec3(10, 10, 10));
-    objects.push_back(triangle7);
-    objects.push_back(triangle8);
-
-    std::shared_ptr<object> triangle9 = std::make_shared<triangle>(lambertianMaterial3, vec3(0, 10, 0), vec3(0, 10, 10), vec3(10, 10, 10));
-    std::shared_ptr<object> triangle10 = std::make_shared<triangle>(lambertianMaterial3, vec3(0, 10, 0), vec3(10, 10, 0), vec3(10, 10, 10));
-    objects.push_back(triangle9);
-    objects.push_back(triangle10);
-
-    std::shared_ptr<object> light1 = std::make_shared<triangle>(lightMaterial1, vec3(4, 9.9, 4), vec3(4, 9.9, 6), vec3(6, 9.9, 4));
-    std::shared_ptr<object> light2 = std::make_shared<triangle>(lightMaterial1, vec3(6, 9.9, 6), vec3(4, 9.9, 6), vec3(6, 9.9, 4));
-    objects.push_back(light1);
-    objects.push_back(light2);
-
-    std::shared_ptr<camera> cameraObject = std::make_shared<camera>(1, 1, 1000, 1000, 1, Position(5, 5, -10, 0, 0, 0));
-    uint32_t launchCount = 10;
-    uint32_t samples = 200;
-    cameraObject->render(objects, launchCount, samples);  
-}
-
-void cornellBox1() {
-    std::vector<std::shared_ptr<object>> objects;
-
-    std::shared_ptr<material> lambertianMaterial1 = std::make_shared<lambertian>(vec3(0.8, 0.5, 0.2));
-    std::shared_ptr<material> lambertianMaterial2 = std::make_shared<lambertian>(vec3(0.2, 0.5, 0.8));
-    std::shared_ptr<material> lambertianMaterial3 = std::make_shared<lambertian>(vec3(0.5, 0.5, 0.5));
-    std::shared_ptr<material> lightMaterial1 = std::make_shared<light>(color(10.0, 10.0, 10.0));
+    std::shared_ptr<material> lightMaterial1 = std::make_shared<light>(color(6.0, 6.0, 6.0));
 
     std::shared_ptr<object> parallelogram1 = std::make_shared<parallelogram>(lambertianMaterial1, vec3(0, 10, 0), vec3(0, 0, 0), vec3(0, 0, 10));
     objects.push_back(parallelogram1);
@@ -295,11 +240,36 @@ void cornellBox1() {
 
     std::shared_ptr<camera> cameraObject = std::make_shared<camera>(1, 1, 1000, 1000, 1, Position(5, 5, -10, 0, 0, 0));
     uint32_t launchCount = 10;
-    uint32_t samples = 1000;
-    cameraObject->render(objects, launchCount, samples);  
+    printf("render rayTracingTheRestOfYourLife: samples = %d, launchCount = %d\n", samples, launchCount);
+    cameraObject->render(objects, launchCount, samples, "./rayTracingTheRestOfYourLife.ppm");  
 }
 
-int main() {    
-    cornellBox1();
+int main(int argc, char** argv) {
+    if ((5 != argc) || (0 != strcmp(argv[1], "-example")) || (0 != strcmp(argv[3], "-samples"))) {
+        printf("input error params");
+        return -1;
+    }
+    int type = std::stoi(argv[2]);
+    uint32_t samples = std::stoi(argv[4]);
+    switch (type)
+    {
+    case 1:
+        RayTracingInOneWeekend(samples);
+        break;
+    case 2:
+        rayTracingTheNextWeek(samples);
+        break;
+    case 3:
+        rayTracingTheRestOfYourLife(samples);
+        break;
+    case 0:
+        renderEarth(samples);
+        break;    
+    default:
+        printf("type = %d is invalid\n", type);
+        return -1;
+        break;
+    }
+    
     return 0;
 }

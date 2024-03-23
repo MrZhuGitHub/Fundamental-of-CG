@@ -239,8 +239,7 @@ bool parallelogram::hit(std::shared_ptr<ray> rayTrace, double& t, std::shared_pt
     }
 
     vec3 intersection = rayTrace->getPoint(t);
-    if ((!triangle::getBarycentricCoordinate(point1_, point2_, point3_, intersection))
-        && (!triangle::getBarycentricCoordinate(point1_, point4_, point3_, intersection))) {
+    if (!isInternal(intersection)) {
         return false;
     }
 
@@ -273,12 +272,25 @@ bool parallelogram::hit(std::shared_ptr<ray> rayTrace, double& t) {
     }
 
     vec3 intersection = rayTrace->getPoint(t);
-    if ((!triangle::getBarycentricCoordinate(point1_, point2_, point3_, intersection))
-        && (!triangle::getBarycentricCoordinate(point1_, point4_, point3_, intersection))) {
+    if (!isInternal(intersection)) {
         return false;
     }
 
     return true;
+}
+
+bool parallelogram::isInternal(vec3 intersection) {
+    intersection = intersection - point2_;
+    vec3 normal = vec3::cross(baseVec1_, baseVec2_);
+    vec3 w = normal/vec3::dot(normal, normal);
+    double alpha = vec3::dot(w, vec3::cross(intersection, baseVec2_));
+    double beta = vec3::dot(w, vec3::cross(baseVec1_, intersection));
+
+    if (alpha >= 0 && alpha <= 1 && beta >= 0 && beta <= 1) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 std::shared_ptr<aabb> parallelogram::getAabb() {
@@ -329,12 +341,11 @@ vec3 parallelogram::getPoint(float u, float v) {
 }
 
 vec3 parallelogram::generateRandomSample(vec3 startPoint) {
-    float u = (float)(rand()%10000)/10000.0;
-    float v = (float)(rand()%10000)/10000.0;
+    float u = rand_double();
+    float v = rand_double();
 
     vec3 endPoint = getPoint(u, v);
-    vec3 result = endPoint - startPoint;
-    return result;
+    return endPoint;
 }
 
 double parallelogram::getRandomSamplePdf(vec3 startPoint, vec3 endPoint, vec3 normal) {
@@ -345,10 +356,7 @@ double parallelogram::getRandomSamplePdf(vec3 startPoint, vec3 endPoint, vec3 no
     double t = 0;
     bool intersect = hit(sampleRay, t);
     if (intersect) {
-        double cosAngle = vec3::dot((endPoint - startPoint).unit(), normal.unit());
-        if (cosAngle <= 0) {
-            return 0;
-        }
+        double cosAngle = fabs(vec3::dot((endPoint - startPoint).unit(), direction_));
         return (pow((endPoint - startPoint).length(), 2)/(cosAngle * (vec3::cross(baseVec1_, baseVec2_).length())));
     } else {
         return 0;

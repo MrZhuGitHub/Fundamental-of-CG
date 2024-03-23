@@ -48,7 +48,7 @@ camera::camera(double height, double width, uint32_t pixelWidth, uint32_t pixelH
     transformMatrix_ = translationMatrix*XrotationMatrix*YrotationMatrix*ZrotationMatrix;
 }
 
-void camera::render(std::vector<std::shared_ptr<object>> objects, uint32_t launchCount, uint32_t samples) {
+void camera::render(std::vector<std::shared_ptr<object>> objects, uint32_t launchCount, uint32_t samples, const char* imagePath, bool skyBox) {
 
     std::vector<std::shared_ptr<aabb>> aabbs;
     for (auto& object : objects) {
@@ -58,23 +58,38 @@ void camera::render(std::vector<std::shared_ptr<object>> objects, uint32_t launc
 
     std::atomic<int> renderingProcess(0);
 
+    samples = pow(static_cast<int>(sqrt(samples)), 2);
+
     double* imageBuffer = (double*)malloc(pixelHeight_*pixelWidth_*3*sizeof(double));
+
+    if (skyBox) {
+        ray::setSky(true);
+    }
+    
     memset((void*)(imageBuffer), 0 ,pixelHeight_*pixelWidth_*3*sizeof(double));
     for (uint32_t yIndex = 0; yIndex < pixelHeight_; yIndex++) {
         for (uint32_t xIndex = 0; xIndex < pixelWidth_; xIndex++) {
             auto renderPixelTask = [&](uint32_t x, uint32_t y, uint32_t samples)->void {
                 auto rays = this->getRays(x, y, samples);
                 color pixelColor(0, 0, 0);
+                uint32_t invalidSamples = 0;
                 for (auto& ray : rays) {
                     color sampleColor = ray->getRayColor(rootBvh, launchCount);
-                    pixelColor = pixelColor + sampleColor;
+                    if (sampleColor.xPosition != sampleColor.xPosition 
+                        || sampleColor.yPosition != sampleColor.yPosition
+                        || sampleColor.zPosition != sampleColor.zPosition) {
+                        invalidSamples++;
+                        continue;
+                    } else {
+                        pixelColor = pixelColor + sampleColor;
+                    }
                 }
-                pixelColor = pixelColor/samples;
+                pixelColor = pixelColor/(samples - invalidSamples);
                 imageBuffer[(y*pixelWidth_ + x)*3] = pixelColor.xPosition;
                 imageBuffer[(y*pixelWidth_ + x)*3 + 1] = pixelColor.yPosition;
                 imageBuffer[(y*pixelWidth_ + x)*3 + 2] = pixelColor.zPosition;
                 int process = renderingProcess.fetch_add(1);
-                fprintf(stderr,"\rRendering process: %f", (double)(process*100.0)/(double)(pixelHeight_*pixelWidth_));
+                fprintf(stderr,"\rRendering process: %f", (double)((process+1)*100.0)/(double)(pixelHeight_*pixelWidth_));
             };
             threadpool_.push(std::bind(renderPixelTask, xIndex, yIndex, samples));
         }
@@ -84,7 +99,7 @@ void camera::render(std::vector<std::shared_ptr<object>> objects, uint32_t launc
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
-    std::ofstream file("./image.ppm");
+    std::ofstream file(imagePath);
     if (!file.is_open()) {
         std::cout << "open file failed" << std::endl;
     }
@@ -107,7 +122,7 @@ void camera::writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color
         file << "P3\n" << pixelWidth_ << ' ' << pixelHeight_ << "\n255\n";
         ppmHead_ = true;
     }
-    
+
     linearToGamma(pixelColor);
 
     if (pixelColor.xPosition > 1) {
@@ -119,6 +134,7 @@ void camera::writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color
     if (pixelColor.zPosition > 1) {
         pixelColor.zPosition = 1;
     }
+                    
     int ir = static_cast<int>(255.999 * pixelColor.xPosition);
     int ig = static_cast<int>(255.999 * pixelColor.yPosition);
     int ib = static_cast<int>(255.999 * pixelColor.zPosition);
@@ -127,15 +143,20 @@ void camera::writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color
 
 std::vector<std::shared_ptr<ray>> camera::getRays(const uint32_t& xPixel, const uint32_t& yPixel, uint32_t count) {
     std::vector<std::shared_ptr<ray>> rays;
-    for (int i = 0; i < count; i++) {
-        double x = (width_/pixelWidth_)*(xPixel + (rand()%10000)/10000.0);
-        double y = (height_/pixelHeight_)*(yPixel + (rand()%10000)/10000.0);
-        x = x - width_/2;
-        y = y - height_/2;
-        vec3 origin = cameraTransform(vec3(0, 0, 0));
-        vec3 direction = cameraTransform(vec3(x, y, len_)) - origin;
-        auto sampleRay = std::make_shared<ray>(origin, direction);
-        rays.push_back(sampleRay);
+    srand(time(NULL));
+    int sqrtCount = static_cast<int>(sqrt(count));
+    double sampleWidth = 1.0/sqrtCount;
+    for (int i = 0; i < sqrtCount; i++) {
+        for (int j = 0; j < sqrtCount; j++) {
+            double x = (width_/pixelWidth_)*(xPixel + i*sampleWidth + rand_double()*sampleWidth);
+            double y = (height_/pixelHeight_)*(yPixel + j*sampleWidth + rand_double()*sampleWidth);
+            x = x - width_/2;
+            y = y - height_/2;
+            vec3 origin = cameraTransform(vec3(0, 0, 0));
+            vec3 direction = cameraTransform(vec3(x, y, len_)) - origin;
+            auto sampleRay = std::make_shared<ray>(origin, direction);
+            rays.push_back(sampleRay);
+        }
     }
     return rays;
 }

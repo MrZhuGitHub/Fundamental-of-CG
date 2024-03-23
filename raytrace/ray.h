@@ -40,11 +40,16 @@ public:
         return valid_;
     }
 
+    static void setSky(bool sky) {
+        kSky_ = sky;
+    }
+
 private:
     vec3 origin_;
     vec3 direction_;
     color background_;
     bool valid_;
+    static bool kSky_;
 };
 
 }

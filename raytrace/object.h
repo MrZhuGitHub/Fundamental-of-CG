@@ -91,6 +91,9 @@ public:
 
     virtual double getRandomSamplePdf(vec3 startPoint, vec3 endPoint, vec3 normal) override;
 
+private:
+    bool isInternal(vec3 intersection);
+
 protected:
     vec3 point1_;
     vec3 point2_;

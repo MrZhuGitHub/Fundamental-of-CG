@@ -10,8 +10,8 @@ HemisphereCosSample::HemisphereCosSample(vec3 point, vec3 normal)
 }
 
 vec3 HemisphereCosSample::generateRandomSample(vec3 startPoint) {
-    double r1 = (double)(rand()%10000)/10000.0;
-    double r2 = (double)(rand()%10000)/10000.0;
+    double r1 = rand_double();
+    double r2 = rand_double();
     double z = sqrt(1 - r2);
     double x = cos(2*PI*r1)*sqrt(r2);
     double y = sin(2*PI*r1)*sqrt(r2);

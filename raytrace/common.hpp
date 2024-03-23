@@ -147,7 +147,11 @@ inline vec3 operator*(const double& multiplier, const vec3& v1) {
     return result;
 }
 
-} // namespace CG
+inline double rand_double() {
+    // Returns a random real in [0,1).
+    return rand() / (RAND_MAX + 1.0);
+}
 
+} // namespace CG
 
 #endif

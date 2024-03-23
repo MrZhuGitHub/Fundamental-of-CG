@@ -20,7 +20,7 @@ class camera {
 public:
     camera(double height, double width, uint32_t pixelWidth, uint32_t pixelHeight, double len, Position position);
 
-    void render(std::vector<std::shared_ptr<object>> objects, uint32_t launchCount, uint32_t samples);
+    void render(std::vector<std::shared_ptr<object>> objects, uint32_t launchCount, uint32_t samples, const char* imagePath, bool skyBox = false);
 
 private:
     void writeColor(unsigned int pixelWidth, unsigned int pixelHeight, color pixelColor, std::ofstream& file);
