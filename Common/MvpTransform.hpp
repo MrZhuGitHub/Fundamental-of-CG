@@ -22,6 +22,16 @@ struct Position
     float rotationX;
     float rotationY;
     float rotationZ;
+    Position(float p1 = 0, float p2 = 0, float p3 = 0, float r1 = 0, float r2 = 0, float r3 = 0)
+        : x(p1)
+        , y(p2)
+        , z(p3)
+        , rotationX(r1)
+        , rotationY(r2)
+        , rotationZ(r3)
+    {
+
+    }
 };
 
 class TransformMatrix {

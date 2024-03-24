@@ -1,3 +1,6 @@
 [submodule "3rd-party-lib/glm"]
 	path = 3rd-party-lib/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "3rd-party-lib/stb"]
+	path = 3rd-party-lib/stb
+	url = https://github.com/nothings/stb.git
