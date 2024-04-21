@@ -83,4 +83,16 @@ void shader::setFloat(const std::string &name, float value) const {
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value); 
 }
 
+void shader::setViewProjectionMatrix(glm::mat4 viewProjectionMatrix) {
+
+}
+
+void shader::setModelMatrix(glm::mat4 modelMatrix) {
+
+}
+
+shader::~shader() {
+    glDeleteProgram(ID);
+}
+
 }

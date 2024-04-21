@@ -11,6 +11,12 @@ void mesh::mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices,
 
 }
 
+mesh::~mesh() {
+    glDeleteVertexArrays(1, &VAO_);
+    glDeleteBuffers(1, &VBO_);
+    glDeleteBuffers(1, &EBO_);
+}
+
 void mesh::setupMesh() {
     glGenVertexArrays(1, &VAO_);
     glGenBuffers(1, &VBO_);
@@ -38,7 +44,7 @@ void mesh::setupMesh() {
     glBindVertexArray(0);    
 }
 
-void mesh::drawMesh(shader drawShader) {
+void mesh::drawMesh(std::shared_ptr<shader> drawShader) {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
     for(unsigned int i = 0; i < textures.size(); i++)
@@ -52,7 +58,7 @@ void mesh::drawMesh(shader drawShader) {
         else if(name == "texture_specular")
             number = std::to_string(specularNr++);
 
-        drawShader.setInt((name + number).c_str(), i);
+        drawShader->setInt((name + number).c_str(), i);
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
 
@@ -67,7 +73,11 @@ model::model(std::string path) {
     loadModel(path);
 }
 
-void model::drawModel(shader drawShader) {
+model::~model() {
+
+}
+
+void model::drawModel(std::shared_ptr<shader> drawShader) {
     for (auto& it : meshes_) {
         it.drawMesh(drawShader);
     }

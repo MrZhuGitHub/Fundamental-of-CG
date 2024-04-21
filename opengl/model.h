@@ -31,7 +31,8 @@ struct texture {
 class mesh {
 public:
     void mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures);
-    void drawMesh(shader drawShader);
+    void drawMesh(std::shared_ptr<shader> drawShader);
+    ~mesh();
 
 private:
     void setupMesh();
@@ -48,7 +49,8 @@ private:
 class model {
 public:
     model(std::string path);
-    void drawModel(shader drawShader);
+    ~model();
+    void drawModel(std::shared_ptr<shader> drawShader);
 
 private:
     void loadModel(string path);

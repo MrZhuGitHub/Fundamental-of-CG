@@ -23,7 +23,7 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\n\0";
  
-int main()
+inline int example()
 {
     // glfw: initialize and configure
     glfwInit();
@@ -150,14 +150,14 @@ int main()
 }
  
 //键盘按键回调函数  
-void processInput(GLFWwindow *window)
+inline void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
  
 //调整窗口大小回调函数
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+inline void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
