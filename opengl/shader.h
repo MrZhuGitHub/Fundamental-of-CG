@@ -7,6 +7,8 @@
 #include <sstream>
 #include <iostream>
 
+#include <glm/glm.hpp>
+
 namespace CG {
 
 class shader {

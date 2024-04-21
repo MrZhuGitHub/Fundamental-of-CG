@@ -13,7 +13,9 @@ project(test)
 find_package(glfw3 REQUIRED)
  
 file(GLOB project_file glad.c main.cpp)
-add_executable(${PROJECT_NAME} ${project_file})
+
+aux_source_directory(. SRC_DIR)
+add_executable(${PROJECT_NAME} ${SRC_DIR} ${project_file})
  
-target_link_libraries(${PROJECT_NAME} glfw)
+target_link_libraries(${PROJECT_NAME} glfw assimp)
 target_link_libraries(${PROJECT_NAME} ${CMAKE_DL_LIBS})

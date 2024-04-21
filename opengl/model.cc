@@ -1,10 +1,12 @@
 #include "model.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
 #include "stb_image.h"
 
 namespace CG {
 
-void mesh::mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures)
+mesh::mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures)
     : vertices_(vertices)
     , indices_(indices)
     , textures_(textures) {
@@ -47,23 +49,23 @@ void mesh::setupMesh() {
 void mesh::drawMesh(std::shared_ptr<shader> drawShader) {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
-    for(unsigned int i = 0; i < textures.size(); i++)
+    for(unsigned int i = 0; i < textures_.size(); i++)
     {
         glActiveTexture(GL_TEXTURE0 + i); // 在绑定之前激活相应的纹理单元
         // 获取纹理序号（diffuse_textureN 中的 N）
         std::string number;
-        std::string name = textures[i].type;
+        std::string name = textures_[i].type;
         if(name == "texture_diffuse")
             number = std::to_string(diffuseNr++);
         else if(name == "texture_specular")
             number = std::to_string(specularNr++);
 
         drawShader->setInt((name + number).c_str(), i);
-        glBindTexture(GL_TEXTURE_2D, textures[i].id);
+        glBindTexture(GL_TEXTURE_2D, textures_[i].id);
     }
 
     glBindVertexArray(VAO_);
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, indices_.size(), GL_UNSIGNED_INT, 0);
 
     glBindVertexArray(0);
     glActiveTexture(GL_TEXTURE0);
@@ -83,7 +85,7 @@ void model::drawModel(std::shared_ptr<shader> drawShader) {
     }
 }
 
-void model::loadModel(string path) {
+void model::loadModel(std::string path) {
     Assimp::Importer import;
     const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);    
 
@@ -104,7 +106,7 @@ void model::processNode(aiNode *node, const aiScene *scene) {
     for(unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]]; 
-        meshes.push_back(processMesh(mesh, scene));         
+        meshes_.push_back(processMesh(mesh, scene));         
     }
 
     for(unsigned int i = 0; i < node->mNumChildren; i++)
@@ -159,10 +161,10 @@ mesh model::processMesh(aiMesh *mesh, const aiScene *scene) {
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     }
 
-    return mesh(vertices, indices, textures);
+    return CG::mesh(vertices, indices, textures);
 }
 
-std::vector<texture> model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, string typeName)
+std::vector<texture> model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)
 {
     std::vector<texture> textures;
     for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -172,13 +174,13 @@ std::vector<texture> model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
         texture texture;
         texture.id = textureFromFile(str.C_Str(), directory_);
         texture.type = typeName;
-        texture.path = str;
+        texture.path = str.C_Str();
         textures.push_back(texture);
     }
     return textures;
 }
 
-unsigned int model::textureFromFile(const char *path, const string &directory)
+unsigned int model::textureFromFile(const char *path, const std::string &directory)
 {
     std::string filename(path);
     filename = directory_ + '/' + filename;

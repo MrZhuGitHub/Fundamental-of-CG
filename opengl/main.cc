@@ -10,11 +10,63 @@
 
 using namespace CG;
 
+#define SCR_WIDTH 1600
+#define SCR_HEIGHT 900
+
 std::shared_ptr<model> kModel;
 std::shared_ptr<shader> kShader;
 std::shared_ptr<camera> kCamera;
-float lastX = 1440, lastY = 900;
+float lastX = SCR_WIDTH, lastY = SCR_HEIGHT;
 bool firstMouse = true;
+
+//键盘按键回调函数  
+void processInput(GLFWwindow *window)
+{
+    float cameraMoveSpeed = 0.05f;
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    } else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        kCamera->move(MOVE_FRONT, cameraMoveSpeed);
+    } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        kCamera->move(MOVE_BACK, cameraMoveSpeed);
+    } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        kCamera->move(MOVE_LEFT, cameraMoveSpeed);
+    } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        kCamera->move(MOVE_RIGHT, cameraMoveSpeed);
+    }
+}
+ 
+//调整窗口大小回调函数
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if(firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; 
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.05;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    kCamera->viewAngle(xoffset, yoffset);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    kCamera->zoom(yoffset);
+}
 
 int main () {
     // glfw: initialize and configure
@@ -74,53 +126,4 @@ int main () {
     glfwTerminate();
     
     return 0;
-}
- 
-//键盘按键回调函数  
-void processInput(GLFWwindow *window)
-{
-    float cameraMoveSpeed = 0.05f;
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    } else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        kCamera->move(MOVE_FRONT, cameraMoveSpeed);
-    } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        kCamera->move(MOVE_BACK, cameraMoveSpeed);
-    } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        kCamera->move(MOVE_LEFT, cameraMoveSpeed);
-    } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        kCamera->move(MOVE_RIGHT, cameraMoveSpeed);
-    }
-}
- 
-//调整窗口大小回调函数
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    if(firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; 
-    lastX = xpos;
-    lastY = ypos;
-
-    float sensitivity = 0.05;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-
-    kCamera->viewAngle(xoffset, yoffset);
-}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    kCamera->zoom(yoffset);
 }

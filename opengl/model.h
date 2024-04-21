@@ -4,13 +4,15 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <memory>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <glm/glm.hpp>
 
-#include <gl3.h>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 #include "shader.h"
 
@@ -30,7 +32,7 @@ struct texture {
 
 class mesh {
 public:
-    void mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures);
+    mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures);
     void drawMesh(std::shared_ptr<shader> drawShader);
     ~mesh();
 
@@ -53,12 +55,12 @@ public:
     void drawModel(std::shared_ptr<shader> drawShader);
 
 private:
-    void loadModel(string path);
+    void loadModel(std::string path);
     void processNode(aiNode *node, const aiScene *scene);
     mesh processMesh(aiMesh *mesh, const aiScene *scene);
 
-    std::vector<texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, string typeName);
-    unsigned int textureFromFile(const char *path, const string &directory);
+    std::vector<texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
+    unsigned int textureFromFile(const char *path, const std::string &directory);
 
 private:
     std::vector<mesh> meshes_;

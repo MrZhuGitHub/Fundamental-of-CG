@@ -4,7 +4,7 @@
 
 namespace CG {
 
-camera::camera(glm::vec3 cameraPos = glm::vec3(0, 0, 100), glm::vec3 cameraFocus = glm::vec3(0, 0, 0), glm::vec3 cameraUp = glm::vec3(0, 1, 0))
+camera::camera(glm::vec3 cameraPos, glm::vec3 cameraFocus, glm::vec3 cameraUp)
     : cameraPos_(cameraPos)
     , cameraFocus_(cameraFocus)
     , cameraUp_(cameraUp)
@@ -13,21 +13,21 @@ camera::camera(glm::vec3 cameraPos = glm::vec3(0, 0, 100), glm::vec3 cameraFocus
 
 }
 
-void camera::move(MoveDirection direction, double distance) {
+void camera::move(MoveDirection direction, float distance) {
     if (MOVE_FRONT == direction) {
-        cameraPos_ = cameraPos_ + distance * glm::normalize(cameraDirection_);
+        cameraPos_ = cameraPos_ +  glm::normalize(cameraDirection_) * distance;
     } else if (MOVE_BACK == direction) {
-        cameraPos_ = cameraPos_ - distance * glm::normalize(cameraDirection_);
+        cameraPos_ = cameraPos_ -  glm::normalize(cameraDirection_) * distance;
     } else if (MOVE_LEFT == direction) {
-        cameraPos_ = cameraPos_ - distance * glm::normalize(glm::cross(cameraDirection_, cameraUp_));
+        cameraPos_ = cameraPos_ - glm::normalize(glm::cross(cameraDirection_, cameraUp_)) * distance;
     } else if (MOVE_RIGHT == direction) {
-        cameraPos_ = cameraPos_ + distance * glm::normalize(glm::cross(cameraDirection_, cameraUp_));
+        cameraPos_ = cameraPos_ + glm::normalize(glm::cross(cameraDirection_, cameraUp_)) * distance;
     } else {
         std::cout << "input invalid camera moving direction" << std::endl;
     }
 }
 
-void camera::viewAngle(double yawOffset, double pitchOffset) {
+void camera::viewAngle(float yawOffset, float pitchOffset) {
 
     if(pitchOffset > 89.0f)
         pitchOffset = 89.0f;
@@ -41,7 +41,7 @@ void camera::viewAngle(double yawOffset, double pitchOffset) {
     cameraDirection_ = glm::normalize(front);
 }
 
-void camera::zoom(double fovOffset) {
+void camera::zoom(float fovOffset) {
     fov_ = fov_ + fovOffset;
     if (fov_ < 1) {
         fov_ = 1;
@@ -54,7 +54,7 @@ void camera::zoom(double fovOffset) {
 glm::mat4 camera::getViewProjectionMatrix() {
     glm::mat4 view;
     view = glm::lookAt(cameraPos_, cameraPos_ + cameraDirection_, cameraUp_);
-    glm::mat4 proj = glm::perspective(glm::radians(fov_), (16.0/9.0), 0.1f, 10000.0f);
+    glm::mat4 proj = glm::perspective(glm::radians(fov_), 16.0f/9.0f, 0.1f, 10000.0f);
     return (proj*view);
 }
 
