@@ -1,16 +1,21 @@
-precision highp float;
-
-varying vec4 normal;
-varying vec3 halfLightView;
-varying vec3 lightDirection;
-
+#version 330 core
+in vec4 normal;
+in vec3 halfLightView;
+in vec3 lightDirection;
+out vec4 fragmentColor;
 uniform vec3 intensity;
 uniform vec3 Ia;
 uniform vec3 ka;
 uniform vec3 kd;
 uniform vec3 ks;
 uniform float phongExp;
-
+in vec2 TexCoord;
+uniform sampler2D texture_diffuse1;
+uniform sampler2D texture_diffuse2;
+uniform sampler2D texture_diffuse3;
+uniform sampler2D texture_specular1;
+uniform sampler2D texture_specular2;
+uniform int texture_enable;
 void main()
 {
     vec3 n = normalize(normal.xyz);
@@ -26,5 +31,9 @@ void main()
         phong = ks*intensity*pow(dot(h, n), phongExp);
     } 
     vec3 color = shadow + diffuse + phong;
-    gl_FragColor = vec4(color, 1.0);
+    if (texture_enable > 0) {
+        fragmentColor = texture(texture_diffuse1, TexCoord) * vec4(color, 1.0);
+    } else {
+        fragmentColor = vec4(color, 1.0);
+    } 
 }

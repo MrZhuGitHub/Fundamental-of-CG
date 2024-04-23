@@ -10,7 +10,7 @@ mesh::mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std:
     : vertices_(vertices)
     , indices_(indices)
     , textures_(textures) {
-
+   setupMesh();     
 }
 
 mesh::~mesh() {
@@ -20,6 +20,7 @@ mesh::~mesh() {
 }
 
 void mesh::setupMesh() {
+
     glGenVertexArrays(1, &VAO_);
     glGenBuffers(1, &VBO_);
     glGenBuffers(1, &EBO_);
@@ -30,29 +31,32 @@ void mesh::setupMesh() {
     glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(vertex), &vertices_[0], GL_STATIC_DRAW);  
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof(unsigned int), 
-                 &indices_[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof(unsigned int), &indices_[0], GL_STATIC_DRAW);
 
-    // 顶点位置
-    glEnableVertexAttribArray(0);   
+    // vertex position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
-    // 顶点法线
-    glEnableVertexAttribArray(1);   
+    glEnableVertexAttribArray(0);   
+    // vertex normal
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, normal));
-    // 顶点纹理坐标
-    glEnableVertexAttribArray(2);   
+    glEnableVertexAttribArray(1);   
+    // vectex texCoords 
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, texCoords));
+    glEnableVertexAttribArray(2);  
 
-    glBindVertexArray(0);    
+    glBindBuffer(GL_ARRAY_BUFFER, 0); 
+
+    glBindVertexArray(0);
+
 }
 
 void mesh::drawMesh(std::shared_ptr<shader> drawShader) {
+    drawShader->use();
+
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
     for(unsigned int i = 0; i < textures_.size(); i++)
     {
-        glActiveTexture(GL_TEXTURE0 + i); // 在绑定之前激活相应的纹理单元
-        // 获取纹理序号（diffuse_textureN 中的 N）
+        glActiveTexture(GL_TEXTURE0 + i); 
         std::string number;
         std::string name = textures_[i].type;
         if(name == "texture_diffuse")
@@ -64,11 +68,17 @@ void mesh::drawMesh(std::shared_ptr<shader> drawShader) {
         glBindTexture(GL_TEXTURE_2D, textures_[i].id);
     }
 
-    glBindVertexArray(VAO_);
-    glDrawElements(GL_TRIANGLES, indices_.size(), GL_UNSIGNED_INT, 0);
+    if (textures_.size() > 0) {
+        drawShader->setInt("texture_enable", 1);
+    } else {
+        drawShader->setInt("texture_enable", 0);
+    }
 
+    glBindVertexArray(VAO_);
+
+    glDrawElements(GL_TRIANGLES, indices_.size(), GL_UNSIGNED_INT, 0);
+    
     glBindVertexArray(0);
-    glActiveTexture(GL_TEXTURE0);
 }
 
 model::model(std::string path) {
@@ -81,7 +91,7 @@ model::~model() {
 
 void model::drawModel(std::shared_ptr<shader> drawShader) {
     for (auto& it : meshes_) {
-        it.drawMesh(drawShader);
+        it->drawMesh(drawShader);
     }
 }
 
@@ -115,7 +125,7 @@ void model::processNode(aiNode *node, const aiScene *scene) {
     }
 }
 
-mesh model::processMesh(aiMesh *mesh, const aiScene *scene) {
+std::shared_ptr<mesh> model::processMesh(aiMesh *mesh, const aiScene *scene) {
     std::vector<vertex> vertices;
     std::vector<unsigned int> indices;
     std::vector<texture> textures;
@@ -161,7 +171,7 @@ mesh model::processMesh(aiMesh *mesh, const aiScene *scene) {
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     }
 
-    return CG::mesh(vertices, indices, textures);
+    return std::make_shared<CG::mesh>(vertices, indices, textures);
 }
 
 std::vector<texture> model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)

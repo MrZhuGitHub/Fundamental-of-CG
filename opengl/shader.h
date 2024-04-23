@@ -22,8 +22,11 @@ public:
     void setInt(const std::string &name, int value) const;   
     void setFloat(const std::string &name, float value) const;
 
-    void setViewProjectionMatrix(glm::mat4 viewProjectionMatrix);
+    void setViewMatrix(glm::mat4 viewMatrix);
+    void setProjectionMatrix(glm::mat4 projectionMatrix);
     void setModelMatrix(glm::mat4 modelMatrix);
+
+    void setLight();
 
 private:
     unsigned int ID;

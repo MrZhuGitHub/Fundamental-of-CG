@@ -8,18 +8,20 @@
 #include "shader.h"
 #include "camera.h"
 
+#include "glm/gtx/string_cast.hpp"
+
 using namespace CG;
 
 #define SCR_WIDTH 1600
 #define SCR_HEIGHT 900
 
-std::shared_ptr<model> kModel;
+std::shared_ptr<model> kModel1, kModel2;
 std::shared_ptr<shader> kShader;
 std::shared_ptr<camera> kCamera;
-float lastX = SCR_WIDTH, lastY = SCR_HEIGHT;
-bool firstMouse = true;
+float kReleaseMouseX = 0.0f, kReleaseMouseY = 0.0f;
+float kPushMouseX = 0.0f, kPushMouseY = 0.0f;
+bool kIfMouseRelease = true;
 
-//键盘按键回调函数  
 void processInput(GLFWwindow *window)
 {
     float cameraMoveSpeed = 0.05f;
@@ -36,31 +38,32 @@ void processInput(GLFWwindow *window)
     }
 }
  
-//调整窗口大小回调函数
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    if(firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
+{    
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        kPushMouseX = xpos;
+        kPushMouseY = ypos;
+        kIfMouseRelease = false;
     }
 
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; 
-    lastX = xpos;
-    lastY = ypos;
-
-    float sensitivity = 0.05;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-
-    kCamera->viewAngle(xoffset, yoffset);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+        if (false == kIfMouseRelease) {
+            float xoffset = xpos - kReleaseMouseX;
+            float yoffset = ypos - kReleaseMouseY;
+            float sensitivity = 0.1;
+            xoffset *= sensitivity;
+            yoffset *= sensitivity;
+            kCamera->viewAngle(xoffset, yoffset);
+        }
+        kReleaseMouseX = xpos;
+        kReleaseMouseY = ypos;
+        kIfMouseRelease = true;
+    }    
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -88,9 +91,11 @@ int main () {
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+
+    glfwWindowHint(GLFW_SAMPLES, 4);
  
     // glad: load all OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -102,9 +107,19 @@ int main () {
     kShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongVertex.glsl",
                                        "/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongFragment.glsl");
 
-    kModel = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/mary/Marry.obj");
+    kModel1 = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/mary/Marry.obj");
+    kModel2 = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/floor/floor.obj");    
 
     kCamera = std::make_shared<camera>();
+
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(1, 1);
+    glEnable(GL_DEPTH_TEST);
+    
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LEQUAL);
+
+    glEnable(GL_MULTISAMPLE);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -112,11 +127,21 @@ int main () {
         processInput(window);
  
         // render
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
- 
-        kShader->setViewProjectionMatrix(kCamera->getViewProjectionMatrix());
-        kModel->drawModel(kShader);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        kShader->use();
+
+        kShader->setLight();
+
+        glm::mat4 defaultModelMatrix = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, -5.0f, 5.0f);
+
+        kShader->setModelMatrix(defaultModelMatrix);
+        kShader->setViewMatrix(kCamera->getViewMatrix());
+        kShader->setProjectionMatrix(kCamera->getProjectMatrix());
+
+        kModel1->drawModel(kShader);
+        kModel2->drawModel(kShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

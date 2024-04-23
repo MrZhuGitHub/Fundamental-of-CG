@@ -9,19 +9,25 @@ camera::camera(glm::vec3 cameraPos, glm::vec3 cameraFocus, glm::vec3 cameraUp)
     , cameraFocus_(cameraFocus)
     , cameraUp_(cameraUp)
     , cameraDirection_(cameraFocus_ - cameraPos_)
-    , fov_(45.0f) {
+    , fov_(45.0f)
+    , yaw_(90.0f)
+    , pitch_(0.0f) {
 
 }
 
 void camera::move(MoveDirection direction, float distance) {
+    glm::vec3 x(cameraPos_.x, 0, cameraPos_.z);
+    x = glm::normalize(x);
+    glm::vec3 y = glm::cross(x, glm::vec3(0, 1, 0));
+    y = glm::normalize(y);
     if (MOVE_FRONT == direction) {
-        cameraPos_ = cameraPos_ +  glm::normalize(cameraDirection_) * distance;
+        cameraFocus_ = cameraFocus_ - x * distance;
     } else if (MOVE_BACK == direction) {
-        cameraPos_ = cameraPos_ -  glm::normalize(cameraDirection_) * distance;
+        cameraFocus_ = cameraFocus_ + x * distance;
     } else if (MOVE_LEFT == direction) {
-        cameraPos_ = cameraPos_ - glm::normalize(glm::cross(cameraDirection_, cameraUp_)) * distance;
+        cameraFocus_ = cameraFocus_ + y * distance;
     } else if (MOVE_RIGHT == direction) {
-        cameraPos_ = cameraPos_ + glm::normalize(glm::cross(cameraDirection_, cameraUp_)) * distance;
+        cameraFocus_ = cameraFocus_ - y * distance;
     } else {
         std::cout << "input invalid camera moving direction" << std::endl;
     }
@@ -29,16 +35,18 @@ void camera::move(MoveDirection direction, float distance) {
 
 void camera::viewAngle(float yawOffset, float pitchOffset) {
 
-    if(pitchOffset > 89.0f)
-        pitchOffset = 89.0f;
-    if(pitchOffset < -89.0f)
-        pitchOffset = -89.0f;
+    pitch_ = pitch_ + pitchOffset;
+    yaw_ = yaw_ + yawOffset;
+    if(pitch_ > 89.0f)
+        pitch_ = 89.0f;
+    if(pitch_ < -89.0f)
+        pitch_ = -89.0f;
 
     glm::vec3 front;
-    front.x = cos(glm::radians(pitchOffset)) * cos(glm::radians(yawOffset));
-    front.y = sin(glm::radians(pitchOffset));
-    front.z = cos(glm::radians(pitchOffset)) * sin(glm::radians(yawOffset));
-    cameraDirection_ = glm::normalize(front);
+    front.x = cos(glm::radians(pitch_)) * cos(glm::radians(yaw_));
+    front.y = sin(glm::radians(pitch_));
+    front.z = cos(glm::radians(pitch_)) * sin(glm::radians(yaw_));
+    cameraPos_ = glm::normalize(front);
 }
 
 void camera::zoom(float fovOffset) {
@@ -46,16 +54,17 @@ void camera::zoom(float fovOffset) {
     if (fov_ < 1) {
         fov_ = 1;
     }
-    if (fov_ > 80) {
-        fov_ = 80;
-    }
 }
 
-glm::mat4 camera::getViewProjectionMatrix() {
+glm::mat4 camera::getViewMatrix() {
     glm::mat4 view;
-    view = glm::lookAt(cameraPos_, cameraPos_ + cameraDirection_, cameraUp_);
-    glm::mat4 proj = glm::perspective(glm::radians(fov_), 16.0f/9.0f, 0.1f, 10000.0f);
-    return (proj*view);
+    view = glm::lookAt(fov_*cameraPos_ + cameraFocus_, cameraFocus_, cameraUp_);
+    return view;
+}
+
+glm::mat4 camera::getProjectMatrix() {
+    glm::mat4 proj = glm::perspective(glm::radians(45.0f), 9.0f/9.0f, 0.01f, 100.0f);
+    return proj;
 }
 
 }

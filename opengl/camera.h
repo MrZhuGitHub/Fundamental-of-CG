@@ -16,7 +16,7 @@ enum MoveDirection {
 
 class camera {
 public:
-    camera(glm::vec3 cameraPos = glm::vec3(0, 0, 100), glm::vec3 cameraFocus = glm::vec3(0, 0, 0), glm::vec3 cameraUp = glm::vec3(0, 1, 0));
+    camera(glm::vec3 cameraPos = glm::vec3(0, 0, 1), glm::vec3 cameraFocus = glm::vec3(0, 0, 0), glm::vec3 cameraUp = glm::vec3(0, 1, 0));
 
     void move(MoveDirection direction, float distance);
 
@@ -24,7 +24,9 @@ public:
 
     void zoom(float fovOffset);
 
-    glm::mat4 getViewProjectionMatrix();
+    glm::mat4 getViewMatrix();
+
+    glm::mat4 getProjectMatrix();
 
 private:
     glm::vec3 cameraPos_;
@@ -32,6 +34,8 @@ private:
     glm::vec3 cameraUp_;
     glm::vec3 cameraDirection_;
     float fov_;
+    float yaw_;
+    float pitch_;
 };
 
 }

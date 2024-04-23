@@ -57,13 +57,13 @@ public:
 private:
     void loadModel(std::string path);
     void processNode(aiNode *node, const aiScene *scene);
-    mesh processMesh(aiMesh *mesh, const aiScene *scene);
+    std::shared_ptr<mesh> processMesh(aiMesh *mesh, const aiScene *scene);
 
     std::vector<texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
     unsigned int textureFromFile(const char *path, const std::string &directory);
 
 private:
-    std::vector<mesh> meshes_;
+    std::vector<std::shared_ptr<mesh>> meshes_;
     std::string directory_;
 };
 
