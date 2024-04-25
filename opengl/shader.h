@@ -25,6 +25,7 @@ public:
     void setViewMatrix(glm::mat4 viewMatrix);
     void setProjectionMatrix(glm::mat4 projectionMatrix);
     void setModelMatrix(glm::mat4 modelMatrix);
+    void setObjPosMatrix(glm::mat4 objMatrix);
 
     void setProperty(float* property, std::string name);
 

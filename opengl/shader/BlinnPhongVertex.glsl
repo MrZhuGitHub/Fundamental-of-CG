@@ -5,6 +5,7 @@ layout (location=2) in vec2 aTexCoord;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
+uniform mat4 objPosMatrix;
 uniform vec3 lightPosition;
 out vec4 normal;
 out vec3 halfLightView;

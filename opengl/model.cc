@@ -81,7 +81,8 @@ void mesh::drawMesh(std::shared_ptr<shader> drawShader) {
     glBindVertexArray(0);
 }
 
-model::model(std::string path) {
+model::model(std::string path)
+    : posAndSizeMat4_(glm::mat4(1.0f)) {
     loadModel(path);
 }
 
@@ -90,9 +91,14 @@ model::~model() {
 }
 
 void model::drawModel(std::shared_ptr<shader> drawShader) {
+    drawShader->setObjPosMatrix(posAndSizeMat4_);
     for (auto& it : meshes_) {
         it->drawMesh(drawShader);
     }
+}
+
+void model::setPosAndSize(glm::mat4 posAndSizeMat4) {
+    posAndSizeMat4_ = posAndSizeMat4;
 }
 
 void model::loadModel(std::string path) {

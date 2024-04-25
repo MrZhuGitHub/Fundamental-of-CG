@@ -34,6 +34,8 @@ class mesh {
 public:
     mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures);
     void drawMesh(std::shared_ptr<shader> drawShader);
+    std::shared_ptr<mesh> processMesh(aiMesh *mesh, const aiScene *scene);
+
     ~mesh();
 
 private:
@@ -53,18 +55,20 @@ public:
     model(std::string path);
     ~model();
     void drawModel(std::shared_ptr<shader> drawShader);
+    void setPosAndSize(glm::mat4 posAndSizeMat4);
 
 private:
     void loadModel(std::string path);
     void processNode(aiNode *node, const aiScene *scene);
-    std::shared_ptr<mesh> processMesh(aiMesh *mesh, const aiScene *scene);
 
+    std::shared_ptr<mesh> processMesh(aiMesh *mesh, const aiScene *scene);
     std::vector<texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
     unsigned int textureFromFile(const char *path, const std::string &directory);
 
 private:
     std::vector<std::shared_ptr<mesh>> meshes_;
     std::string directory_;
+    glm::mat4 posAndSizeMat4_;
 };
 
 }

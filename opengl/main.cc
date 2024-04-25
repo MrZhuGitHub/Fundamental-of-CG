@@ -3,6 +3,7 @@
  
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include "model.h"
 #include "shader.h"
@@ -16,9 +17,7 @@ using namespace CG;
 #define SCR_WIDTH 1600
 #define SCR_HEIGHT 900
 
-std::shared_ptr<model> kModel1, kModel2;
-std::shared_ptr<curve> kCurve;
-std::shared_ptr<shader> kShader, kCurveShader;
+std::shared_ptr<shader> kLineShader, kModelShader;
 std::shared_ptr<camera> kCamera;
 float kReleaseMouseX = 0.0f, kReleaseMouseY = 0.0f;
 float kPushMouseX = 0.0f, kPushMouseY = 0.0f;
@@ -73,6 +72,18 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     kCamera->zoom(yoffset);
 }
 
+std::vector<vertex> generateLine() {
+    std::vector<vertex> vertexes;
+    for (int i = 0; i < 200; i++) {
+        vertex v;
+        v.position.x = 0;
+        v.position.y = 0;
+        v.position.z = 0 - i;
+        vertexes.push_back(v);
+    }
+    return vertexes;
+}
+
 int main () {
     // glfw: initialize and configure
     glfwInit();
@@ -97,7 +108,7 @@ int main () {
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    glfwWindowHint(GLFW_SAMPLES, 4);
+    glfwWindowHint(GLFW_SAMPLES, 16);
  
     // glad: load all OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -106,35 +117,45 @@ int main () {
         return -1;
     }
 
-    kCurveShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/CurvedVertex.glsl",
+    //shader
+    kLineShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/CurvedVertex.glsl",
                                             "/opengles/Fundamental-of-CG/opengl/shader/CurvedFragment.glsl",
                                             "/opengles/Fundamental-of-CG/opengl/shader/CurvedGeometry.glsl");
 
-    float curveColor[] = {0.9f, 0.7f, 0.6f};
-    vertex vertex1, vertex2, vertex3, vertex4, vertex5, vertex6;
-    vertex1.position = glm::vec3(0.0f, 0.0f, 0.0f);
-    vertex2.position = glm::vec3(-100.0f, 0.0f, 0.0f);
-    vertex3.position = glm::vec3(-120.0f, 0.0f, 30.0f);
-    vertex4.position = glm::vec3(-80.0f, 0.0f, 65.0f);
-    vertex5.position = glm::vec3(40.0f, 0.0f, 40.0f);
-    vertex6.position = glm::vec3(20.0f, 10.0f, 80.0f);
-    std::vector<vertex> curveVertex;
-    curveVertex.push_back(vertex1);
-    curveVertex.push_back(vertex2);
-    curveVertex.push_back(vertex3);
-    curveVertex.push_back(vertex4);
-    curveVertex.push_back(vertex5);
-    curveVertex.push_back(vertex6);
-    kCurve = std::make_shared<curve>(curveVertex);
+    kModelShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongVertex.glsl",
+                                       "/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongFragment.glsl");
 
-    // kShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongVertex.glsl",
-    //                                    "/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongFragment.glsl");
+    
+    //model
+    std::vector<std::shared_ptr<model>> models;
+    // auto car = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/object/911gt3.STL");
+    // models.push_back(car);
+    auto mary = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/mary/Marry.obj");
+    models.push_back(mary);
 
-    // kModel1 = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/mary/Marry.obj");
-    // kModel2 = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/floor/floor.obj");    
+    std::vector<std::shared_ptr<curve>> lines;
+    // std::vector<vertex> vertexes = generateLine();
+    // float yellow[3] = {1.0f, 1.0f, 0.0f};
+    // float white[3] = {1.0f, 1.0f, 1.0f};
+    // auto line1 = std::make_shared<curve>(vertexes, white, 0.1, CurveType::LINE_NO_STRIP);
+    // line1->moveLeft(8.0);
+    // auto line2 = std::make_shared<curve>(vertexes, white, 0.1, CurveType::LINE_STRIP);
+    // line2->moveLeft(4.0);
+    // auto line3 = std::make_shared<curve>(vertexes, yellow, 0.1, CurveType::LINE_NO_STRIP);
+    // auto line4 = std::make_shared<curve>(vertexes, white, 0.1, CurveType::LINE_STRIP);
+    // line4->moveRight(4.0);
+    // auto line5 = std::make_shared<curve>(vertexes, white, 0.1, CurveType::LINE_NO_STRIP);
+    // line5->moveRight(8.0);
+    // lines.push_back(line1);
+    // lines.push_back(line2);
+    // lines.push_back(line3);
+    // lines.push_back(line4);
+    // lines.push_back(line5);
 
+    //camera
     kCamera = std::make_shared<camera>();
 
+    //opengl
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1, 1);
     glEnable(GL_DEPTH_TEST);
@@ -143,6 +164,8 @@ int main () {
     glDepthFunc(GL_LEQUAL);
 
     glEnable(GL_MULTISAMPLE);
+
+    glm::mat4 defaultModelMatrix = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, -5.0f, 5.0f);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -153,29 +176,27 @@ int main () {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // kShader->use();
+        //draw model
+        kModelShader->use();
+        kModelShader->setModelMatrix(defaultModelMatrix);
+        kModelShader->setViewMatrix(kCamera->getViewMatrix());
+        kModelShader->setProjectionMatrix(kCamera->getProjectMatrix());
 
-        // kShader->setLight();
+        for (auto& model : models) {
+            model->drawModel(kModelShader);
+        }
 
-        // glm::mat4 defaultModelMatrix = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, -5.0f, 5.0f);
+        // //draw line
+        // kLineShader->use();
+        // kLineShader->setModelMatrix(defaultModelMatrix);
+        // kLineShader->setViewMatrix(kCamera->getViewMatrix());
+        // kLineShader->setProjectionMatrix(kCamera->getProjectMatrix());
 
-        // kShader->setModelMatrix(defaultModelMatrix);
-        // kShader->setViewMatrix(kCamera->getViewMatrix());
-        // kShader->setProjectionMatrix(kCamera->getProjectMatrix());
+        // for (auto& line : lines) {
+        //     line->drawCurve(kLineShader);
+        // }
 
-        // kModel1->drawModel(kShader);
-        // kModel2->drawModel(kShader);
-
-        kCurveShader->use();
-
-        glm::mat4 defaultModelMatrix = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, -20.0f, 20.0f);
-
-        kCurveShader->setModelMatrix(defaultModelMatrix);
-        kCurveShader->setViewMatrix(kCamera->getViewMatrix());
-        kCurveShader->setProjectionMatrix(kCamera->getProjectMatrix());
-
-        kCurve->drawCurve(kCurveShader, curveColor, 8.0f);
-
+        //swap frame buffer
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

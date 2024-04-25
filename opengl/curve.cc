@@ -3,19 +3,27 @@
 #include <string>
 
 namespace CG {
-curve::curve(std::vector<vertex> vertices)
-    : vertices_(vertices) {
+curve::curve(std::vector<vertex> vertices, float* color, float width, CurveType type)
+    : vertices_(vertices)
+    , posAndSizeMat4_(glm::mat4(1.0f)) {
+    width_ = width;
+    memcpy(color_, color, 3 * sizeof(float));
+    type_ = type;
     setupMesh();
 }
 
-void curve::drawCurve(std::shared_ptr<shader> drawShader, float* color, float width) {
+void curve::setPosAndSize(glm::mat4 posAndSizeMat4) {
+    posAndSizeMat4_ = posAndSizeMat4;
+}
+
+void curve::drawCurve(std::shared_ptr<shader> drawShader) {
     drawShader->use();
 
     // glLineWidth(width);
 
     // glEnable(GL_BLEND);
 
-    // glEnable(GL_LINE_SMOOTH);
+    glEnable(GL_LINE_SMOOTH);
 
     // glHint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
 
@@ -23,13 +31,19 @@ void curve::drawCurve(std::shared_ptr<shader> drawShader, float* color, float wi
 
     // glLineStipple(1, 0x3F3F);
 
-    drawShader->setProperty(color, "color");
+    drawShader->setProperty(color_, "color");
 
-    drawShader->setFloat(width, "width");
+    drawShader->setFloat(width_, "width");
+
+    drawShader->setObjPosMatrix(posAndSizeMat4_);
 
     glBindVertexArray(VAO_);
 
-    glDrawArrays(GL_LINES, 0, vertices_.size());
+    if (type_ == LINE_NO_STRIP) {
+        glDrawArrays(GL_LINE_STRIP, 0, vertices_.size());
+    } else if (type_ == LINE_STRIP) {
+        glDrawArrays(GL_LINES, 0, vertices_.size());
+    }
     
     glBindVertexArray(0);
 }

@@ -136,6 +136,10 @@ void shader::setFloat(float property, std::string name) {
     glUniform1f(glGetUniformLocation(ID, name.c_str()), property);
 }
 
+void shader::setObjPosMatrix(glm::mat4 objMatrix) {
+    glUniformMatrix4fv(glGetUniformLocation(ID, "objPosMatrix"), 1, GL_FALSE, glm::value_ptr(objMatrix));
+}
+
 void shader::setLight() {
     float lightPosition[3] = {2000, 2000, 2000};
     auto lightPositionLocation = glGetUniformLocation(ID, "lightPosition");
