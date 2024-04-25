@@ -7,6 +7,7 @@
 #include "model.h"
 #include "shader.h"
 #include "camera.h"
+#include "curve.h"
 
 #include "glm/gtx/string_cast.hpp"
 
@@ -16,7 +17,8 @@ using namespace CG;
 #define SCR_HEIGHT 900
 
 std::shared_ptr<model> kModel1, kModel2;
-std::shared_ptr<shader> kShader;
+std::shared_ptr<curve> kCurve;
+std::shared_ptr<shader> kShader, kCurveShader;
 std::shared_ptr<camera> kCamera;
 float kReleaseMouseX = 0.0f, kReleaseMouseY = 0.0f;
 float kPushMouseX = 0.0f, kPushMouseY = 0.0f;
@@ -104,11 +106,32 @@ int main () {
         return -1;
     }
 
-    kShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongVertex.glsl",
-                                       "/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongFragment.glsl");
+    kCurveShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/CurvedVertex.glsl",
+                                            "/opengles/Fundamental-of-CG/opengl/shader/CurvedFragment.glsl",
+                                            "/opengles/Fundamental-of-CG/opengl/shader/CurvedGeometry.glsl");
 
-    kModel1 = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/mary/Marry.obj");
-    kModel2 = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/floor/floor.obj");    
+    float curveColor[] = {0.9f, 0.7f, 0.6f};
+    vertex vertex1, vertex2, vertex3, vertex4, vertex5, vertex6;
+    vertex1.position = glm::vec3(0.0f, 0.0f, 0.0f);
+    vertex2.position = glm::vec3(-100.0f, 0.0f, 0.0f);
+    vertex3.position = glm::vec3(-120.0f, 0.0f, 30.0f);
+    vertex4.position = glm::vec3(-80.0f, 0.0f, 65.0f);
+    vertex5.position = glm::vec3(40.0f, 0.0f, 40.0f);
+    vertex6.position = glm::vec3(20.0f, 10.0f, 80.0f);
+    std::vector<vertex> curveVertex;
+    curveVertex.push_back(vertex1);
+    curveVertex.push_back(vertex2);
+    curveVertex.push_back(vertex3);
+    curveVertex.push_back(vertex4);
+    curveVertex.push_back(vertex5);
+    curveVertex.push_back(vertex6);
+    kCurve = std::make_shared<curve>(curveVertex);
+
+    // kShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongVertex.glsl",
+    //                                    "/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongFragment.glsl");
+
+    // kModel1 = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/mary/Marry.obj");
+    // kModel2 = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/floor/floor.obj");    
 
     kCamera = std::make_shared<camera>();
 
@@ -130,18 +153,28 @@ int main () {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        kShader->use();
+        // kShader->use();
 
-        kShader->setLight();
+        // kShader->setLight();
 
-        glm::mat4 defaultModelMatrix = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, -5.0f, 5.0f);
+        // glm::mat4 defaultModelMatrix = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, -5.0f, 5.0f);
 
-        kShader->setModelMatrix(defaultModelMatrix);
-        kShader->setViewMatrix(kCamera->getViewMatrix());
-        kShader->setProjectionMatrix(kCamera->getProjectMatrix());
+        // kShader->setModelMatrix(defaultModelMatrix);
+        // kShader->setViewMatrix(kCamera->getViewMatrix());
+        // kShader->setProjectionMatrix(kCamera->getProjectMatrix());
 
-        kModel1->drawModel(kShader);
-        kModel2->drawModel(kShader);
+        // kModel1->drawModel(kShader);
+        // kModel2->drawModel(kShader);
+
+        kCurveShader->use();
+
+        glm::mat4 defaultModelMatrix = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, -20.0f, 20.0f);
+
+        kCurveShader->setModelMatrix(defaultModelMatrix);
+        kCurveShader->setViewMatrix(kCamera->getViewMatrix());
+        kCurveShader->setProjectionMatrix(kCamera->getProjectMatrix());
+
+        kCurve->drawCurve(kCurveShader, curveColor, 8.0f);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

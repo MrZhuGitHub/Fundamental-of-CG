@@ -13,7 +13,7 @@ namespace CG {
 
 class shader {
 public:
-    shader(const char* vertexPath, const char* fragmentPath);
+    shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
     ~shader();
 
     void use();
@@ -25,6 +25,10 @@ public:
     void setViewMatrix(glm::mat4 viewMatrix);
     void setProjectionMatrix(glm::mat4 projectionMatrix);
     void setModelMatrix(glm::mat4 modelMatrix);
+
+    void setProperty(float* property, std::string name);
+
+    void setFloat(float property, std::string name);
 
     void setLight();
 

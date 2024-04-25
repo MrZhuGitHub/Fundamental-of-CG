@@ -4,34 +4,50 @@
 
 namespace CG {
 
-shader::shader(const char* vertexPath, const char* fragmentPath) {
+shader::shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) {
     std::string vertexCode;
     std::string fragmentCode;
+    std::string geometryCode;
     std::ifstream vShaderFile;
     std::ifstream fShaderFile;
+    std::ifstream gShaderFile;
 
     vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
     fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
+    gShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
     try {
         vShaderFile.open(vertexPath);
         fShaderFile.open(fragmentPath);
-        std::stringstream vShaderStream, fShaderStream;
+        if (nullptr != geometryPath) {
+            gShaderFile.open(geometryPath);
+        }
+        std::stringstream vShaderStream, fShaderStream, gShaderStream;
 
         vShaderStream << vShaderFile.rdbuf();
-        fShaderStream << fShaderFile.rdbuf();       
+        fShaderStream << fShaderFile.rdbuf();
+        if (nullptr != geometryPath) {
+            gShaderStream << gShaderFile.rdbuf();
+        }  
 
         vShaderFile.close();
         fShaderFile.close();
+        if (nullptr != geometryPath) {
+            gShaderFile.close();
+        }  
 
         vertexCode   = vShaderStream.str();
-        fragmentCode = fShaderStream.str();     
+        fragmentCode = fShaderStream.str();
+        if (nullptr != geometryPath) {
+            geometryCode = gShaderStream.str();
+        }    
     } catch(std::ifstream::failure e) {
         std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
     }
     const char* vShaderCode = vertexCode.c_str();
     const char* fShaderCode = fragmentCode.c_str();
+    const char* gShaderCode = geometryCode.c_str();
 
-    unsigned int vertex, fragment;
+    unsigned int vertex, fragment, geometry;
     int success;
     char infoLog[512];
 
@@ -53,9 +69,23 @@ shader::shader(const char* vertexPath, const char* fragmentPath) {
         std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
 
+    if (nullptr != geometryPath) {
+        geometry = glCreateShader(GL_GEOMETRY_SHADER);
+        glShaderSource(geometry, 1, &gShaderCode, NULL);
+        glCompileShader(geometry);
+        glGetShaderiv(geometry, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(geometry, 512, NULL, infoLog);
+            std::cout << "ERROR::SHADER::GEOMETRY::COMPILATION_FAILED\n" << infoLog << std::endl;
+        }
+    }
+
     ID = glCreateProgram();
     glAttachShader(ID, vertex);
     glAttachShader(ID, fragment);
+    if (nullptr != geometryPath) {
+        glAttachShader(ID, geometry);
+    }
     glLinkProgram(ID);
 
     glGetProgramiv(ID, GL_LINK_STATUS, &success);
@@ -67,6 +97,7 @@ shader::shader(const char* vertexPath, const char* fragmentPath) {
 
     glDeleteShader(vertex);
     glDeleteShader(fragment);
+    glDeleteShader(geometry);
 }
 
 void shader::use() {
@@ -95,6 +126,14 @@ void shader::setProjectionMatrix(glm::mat4 projectionMatrix) {
 
 void shader::setModelMatrix(glm::mat4 modelMatrix) {
     glUniformMatrix4fv(glGetUniformLocation(ID, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+}
+
+void shader::setProperty(float* property, std::string name) {
+    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, property);
+}
+
+void shader::setFloat(float property, std::string name) {
+    glUniform1f(glGetUniformLocation(ID, name.c_str()), property);
 }
 
 void shader::setLight() {
