@@ -28,8 +28,6 @@ void mesh::setupMesh() {
     glBindVertexArray(VAO_);
     glBindBuffer(GL_ARRAY_BUFFER, VBO_);
 
-    printf("vertexes size = %ld\n", vertices_.size());
-
     glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(vertex), &vertices_[0], GL_STATIC_DRAW);  
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_);
@@ -51,7 +49,7 @@ void mesh::setupMesh() {
 
 }
 
-void mesh::drawMesh(std::shared_ptr<shader> drawShader) {
+void mesh::drawMesh(std::shared_ptr<shader> drawShader, int size) {
     drawShader->use();
 
     unsigned int diffuseNr = 1;
@@ -78,13 +76,12 @@ void mesh::drawMesh(std::shared_ptr<shader> drawShader) {
 
     glBindVertexArray(VAO_);
 
-    glDrawElements(GL_TRIANGLES, indices_.size(), GL_UNSIGNED_INT, 0);
+    glDrawElementsInstanced(GL_TRIANGLES, indices_.size(), GL_UNSIGNED_INT, 0, size);
     
     glBindVertexArray(0);
 }
 
-model::model(std::string path)
-    : posAndSizeMat4_(glm::mat4(1.0f)) {
+model::model(std::string path) {
     loadModel(path);
 }
 
@@ -93,14 +90,19 @@ model::~model() {
 }
 
 void model::drawModel(std::shared_ptr<shader> drawShader) {
-    drawShader->setObjPosMatrix(posAndSizeMat4_);
+    for (int i = 0; i < transforms_.size(); i++) {
+        std::string name("objPosMatrix[");
+        name.append(std::to_string(i));
+        name.append("]");
+        drawShader->setProperty(transforms_[i], name.c_str());
+    }
     for (auto& it : meshes_) {
-        it->drawMesh(drawShader);
+        it->drawMesh(drawShader, transforms_.size());
     }
 }
 
-void model::setPosAndSize(glm::mat4 posAndSizeMat4) {
-    posAndSizeMat4_ = posAndSizeMat4;
+void model::addInstance(glm::mat4 posAndSizeMat4) {
+    transforms_.push_back(posAndSizeMat4);
 }
 
 void model::loadModel(std::string path) {

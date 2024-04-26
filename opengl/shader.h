@@ -29,6 +29,8 @@ public:
 
     void setProperty(float* property, std::string name);
 
+    void setProperty(glm::mat4 property, std::string name);
+
     void setFloat(float property, std::string name);
 
     void setLight();

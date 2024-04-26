@@ -140,8 +140,12 @@ void shader::setObjPosMatrix(glm::mat4 objMatrix) {
     glUniformMatrix4fv(glGetUniformLocation(ID, "objPosMatrix"), 1, GL_FALSE, glm::value_ptr(objMatrix));
 }
 
+void shader::setProperty(glm::mat4 property, std::string name) {
+    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(property));
+}
+
 void shader::setLight() {
-    float lightPosition[3] = {2000, 2000, 2000};
+    float lightPosition[3] = {-2000, 2000, -2000};
     auto lightPositionLocation = glGetUniformLocation(ID, "lightPosition");
     glUniform3fv(lightPositionLocation, 1, lightPosition);
 
@@ -165,7 +169,7 @@ void shader::setLight() {
     auto ksLocation = glGetUniformLocation(ID, "ks");
     glUniform3fv(ksLocation, 1, ks);
 
-    float phongExp = 32;
+    float phongExp = 16;
     auto phongExpLocation = glGetUniformLocation(ID, "phongExp");
     glUniform1f(phongExpLocation, phongExp);
 }

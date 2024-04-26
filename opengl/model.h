@@ -33,7 +33,7 @@ struct texture {
 class mesh {
 public:
     mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures);
-    void drawMesh(std::shared_ptr<shader> drawShader);
+    void drawMesh(std::shared_ptr<shader> drawShader, int size);
     std::shared_ptr<mesh> processMesh(aiMesh *mesh, const aiScene *scene);
 
     ~mesh();
@@ -55,7 +55,7 @@ public:
     model(std::string path);
     ~model();
     void drawModel(std::shared_ptr<shader> drawShader);
-    void setPosAndSize(glm::mat4 posAndSizeMat4);
+    void addInstance(glm::mat4 posAndSizeMat4);
 
 private:
     void loadModel(std::string path);
@@ -68,7 +68,7 @@ private:
 private:
     std::vector<std::shared_ptr<mesh>> meshes_;
     std::string directory_;
-    glm::mat4 posAndSizeMat4_;
+    std::vector<glm::mat4> transforms_;
 };
 
 }
