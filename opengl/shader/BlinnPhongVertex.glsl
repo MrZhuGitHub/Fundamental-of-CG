@@ -13,8 +13,8 @@ out vec3 lightDirection;
 out vec2 TexCoord;
 void main()
 {
-    vec4 vVerticPositionInCameraCoordinate = viewMatrix * modelMatrix * vec4(vPosition, 1.0);
-    vec4 vNormalInCameraCoordinate = viewMatrix * (vec4(vNormal, 0.0) + modelMatrix * vec4(vPosition, 1.0)) - vVerticPositionInCameraCoordinate;
+    vec4 vVerticPositionInCameraCoordinate = viewMatrix * modelMatrix * objPosMatrix * vec4(vPosition, 1.0);
+    vec4 vNormalInCameraCoordinate = viewMatrix * (vec4(vNormal, 0.0) + modelMatrix * objPosMatrix * vec4(vPosition, 1.0)) - vVerticPositionInCameraCoordinate;
     normal = vNormalInCameraCoordinate;
     vec4 vLightPositionInCameraCoordinate = viewMatrix * vec4(lightPosition, 1.0);
     lightDirection = normalize(vLightPositionInCameraCoordinate.xyz - vVerticPositionInCameraCoordinate.xyz);

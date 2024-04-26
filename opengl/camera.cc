@@ -63,7 +63,7 @@ glm::mat4 camera::getViewMatrix() {
 }
 
 glm::mat4 camera::getProjectMatrix() {
-    glm::mat4 proj = glm::perspective(glm::radians(30.0f), 9.0f/9.0f, 0.01f, 1000.0f);
+    glm::mat4 proj = glm::perspective(glm::radians(60.0f), 9.0f/9.0f, 0.01f, 10000.0f);
     return proj;
 }
 

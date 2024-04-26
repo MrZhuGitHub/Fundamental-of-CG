@@ -28,6 +28,8 @@ void mesh::setupMesh() {
     glBindVertexArray(VAO_);
     glBindBuffer(GL_ARRAY_BUFFER, VBO_);
 
+    printf("vertexes size = %ld\n", vertices_.size());
+
     glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(vertex), &vertices_[0], GL_STATIC_DRAW);  
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_);
