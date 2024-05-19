@@ -9,6 +9,7 @@
 #include "shader.h"
 #include "camera.h"
 #include "curve.h"
+#include "text.h"
 
 #include "glm/gtx/string_cast.hpp"
 
@@ -17,7 +18,7 @@ using namespace CG;
 #define SCR_WIDTH 1600
 #define SCR_HEIGHT 900
 
-std::shared_ptr<shader> kShader, kLineShader, kModelShader;
+std::shared_ptr<shader> kShader, kLineShader, kModelShader, kTextShader;
 std::shared_ptr<camera> kCamera;
 float kReleaseMouseX = 0.0f, kReleaseMouseY = 0.0f;
 float kPushMouseX = 0.0f, kPushMouseY = 0.0f;
@@ -127,6 +128,9 @@ int main () {
     
     kShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/vertex.glsl",
                                        "/opengles/Fundamental-of-CG/opengl/shader/fragment.glsl");
+
+    kTextShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/textVertex.glsl",
+                                       "/opengles/Fundamental-of-CG/opengl/shader/textFragment.glsl");
 
     //model
     std::vector<std::shared_ptr<model>> models;
@@ -273,6 +277,10 @@ int main () {
     lines.push_back(line4);
     lines.push_back(line5);
 
+    //text
+    std::shared_ptr<text> textObject = std::make_shared<text>(kTextShader, SCR_WIDTH, SCR_HEIGHT);
+    textObject->loadCharacters("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf");
+
     //camera
     kCamera = std::make_shared<camera>();
 
@@ -285,6 +293,10 @@ int main () {
     glDepthFunc(GL_LEQUAL);
 
     glEnable(GL_MULTISAMPLE);
+
+    // glEnable(GL_CULL_FACE);
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glm::mat4 defaultModelMatrix = glm::ortho(-3.0f, 3.0f, -3.0f, 3.0f, -3.0f, 3.0f);
 
@@ -328,6 +340,12 @@ int main () {
         for (auto& arrow : arrows) {
             arrow->drawModel(kShader);
         }
+
+        //draw text
+        textObject->renderText("Time: 38748.43s", 10, 850, 0.6f, glm::vec3(1.0f, 1.0f, 1.0f));
+        textObject->renderText("Speed: 108.4km/h", 10, 800, 0.6f, glm::vec3(1.0f, 1.0f, 1.0f));
+        textObject->renderText("Steering: -4.2 deg", 10, 750, 0.6f, glm::vec3(1.0f, 1.0f, 1.0f));
+        textObject->renderText("Yaw Rate: 0.8 deg/s", 10, 700, 0.6f, glm::vec3(1.0f, 1.0f, 1.0f));
 
         //swap frame buffer
         glfwSwapBuffers(window);

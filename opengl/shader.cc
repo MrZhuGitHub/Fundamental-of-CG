@@ -144,6 +144,10 @@ void shader::setProperty(glm::mat4 property, std::string name) {
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(property));
 }
 
+void shader::setProperty(glm::vec3 property, std::string name) {
+    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(property));
+}
+
 void shader::setLight() {
     float lightPosition[3] = {-2000, 2000, -2000};
     auto lightPositionLocation = glGetUniformLocation(ID, "lightPosition");

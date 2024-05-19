@@ -35,5 +35,5 @@ void main()
         fragmentColor = texture(texture_diffuse1, TexCoord) * vec4(color, 1.0);
     } else {
         fragmentColor = vec4(color, 1.0);
-    } 
+    }
 }
