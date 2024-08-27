@@ -7,19 +7,19 @@ uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 objPosMatrix[100];
 uniform vec3 lightPosition;
+uniform vec3 camearPosition;
 out vec4 normal;
 out vec3 halfLightView;
 out vec3 lightDirection;
 out vec2 TexCoord;
+out vec3 viewDirection;
 void main()
 {
-    vec4 vVerticPositionInCameraCoordinate = viewMatrix * modelMatrix * objPosMatrix[gl_InstanceID] * vec4(vPosition, 1.0);
-    vec4 vNormalInCameraCoordinate = viewMatrix * (vec4(vNormal, 0.0) + modelMatrix * objPosMatrix[gl_InstanceID] * vec4(vPosition, 1.0)) - vVerticPositionInCameraCoordinate;
-    normal = vNormalInCameraCoordinate;
-    vec4 vLightPositionInCameraCoordinate = viewMatrix * vec4(lightPosition, 1.0);
-    lightDirection = normalize(vLightPositionInCameraCoordinate.xyz - vVerticPositionInCameraCoordinate.xyz);
-    vec3 viewDirection = normalize(-vVerticPositionInCameraCoordinate.xyz); 
+    vec4 vVerticPositionInModelCoordinate = modelMatrix * objPosMatrix[gl_InstanceID] * vec4(vPosition, 1.0);
+    normal = normalize(modelMatrix * objPosMatrix[gl_InstanceID] * (vec4(vNormal, 0.0) + vec4(vPosition, 1.0)) - vVerticPositionInModelCoordinate);
+    lightDirection = normalize(lightPosition.xyz - vVerticPositionInModelCoordinate.xyz);
+    viewDirection = normalize(camearPosition - vVerticPositionInModelCoordinate.xyz);
     halfLightView = normalize(viewDirection + lightDirection); 
     TexCoord = aTexCoord;
-    gl_Position = projectionMatrix * vVerticPositionInCameraCoordinate; 
+    gl_Position = projectionMatrix * viewMatrix * vVerticPositionInModelCoordinate;
 }

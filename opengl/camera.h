@@ -28,6 +28,8 @@ public:
 
     glm::mat4 getProjectMatrix();
 
+    glm::vec3 getCameraPosition();
+
 private:
     glm::vec3 cameraPos_;
     glm::vec3 cameraFocus_;
