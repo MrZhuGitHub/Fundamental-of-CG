@@ -1,6 +1,7 @@
 #include "camera.h"
 
 #include <iostream>
+#include <cmath>
 
 namespace CG {
 
@@ -13,6 +14,9 @@ camera::camera(glm::vec3 cameraPos, glm::vec3 cameraFocus, glm::vec3 cameraUp)
     , yaw_(90.0f)
     , pitch_(0.0f) {
 
+    glm::vec3 normal = glm::normalize(cameraPos);
+    yaw_ = atan(normal.z/normal.x)*180.0f/3.14159 + 180.0f;
+    pitch_ = atan(normal.y/sqrt(normal.z*normal.z + normal.x*normal.x))*180.0f/3.14159;
 }
 
 void camera::move(MoveDirection direction, float distance) {
@@ -46,7 +50,7 @@ void camera::viewAngle(float yawOffset, float pitchOffset) {
     front.x = cos(glm::radians(pitch_)) * cos(glm::radians(yaw_));
     front.y = sin(glm::radians(pitch_));
     front.z = cos(glm::radians(pitch_)) * sin(glm::radians(yaw_));
-    cameraPos_ = glm::normalize(front);
+    cameraPos_ = glm::length(cameraPos_) * glm::normalize(front);
 }
 
 void camera::zoom(float fovOffset) {
