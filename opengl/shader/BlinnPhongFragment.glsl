@@ -3,6 +3,7 @@ in vec4 normal;
 in vec3 halfLightView;
 in vec3 viewDirection;
 in vec3 lightDirection;
+in vec4 vertexPosition;
 out vec4 fragmentColor;
 uniform vec3 intensity;
 uniform vec3 Ia;
@@ -17,6 +18,9 @@ uniform sampler2D texture_diffuse3;
 uniform sampler2D texture_specular1;
 uniform sampler2D texture_specular2;
 uniform int texture_enable;
+uniform bool shadowMap;
+uniform sampler2D shadowTexture;
+in vec4 CoordInLightCamera;
 void main()
 {
     vec3 n = normalize(normal.xyz);
@@ -49,5 +53,34 @@ void main()
         fragmentColor = texture(texture_diffuse1, TexCoord) * vec4(color, 1.0);
     } else {
         fragmentColor = vec4(color, 1.0);
+    }
+
+    if (shadowMap) {
+        float zDepth = 0.5*vertexPosition.z/vertexPosition.w + 0.5f;
+        fragmentColor = vec4(zDepth, zDepth, zDepth, 1.0);
+    } else {
+        float z =  0.5*CoordInLightCamera.z/CoordInLightCamera.w + 0.5f;
+        float x = 0.5*CoordInLightCamera.x/CoordInLightCamera.w + 0.5f;
+        float y = 0.5*CoordInLightCamera.y/CoordInLightCamera.w + 0.5f;
+        float zMinDepth = texture(shadowTexture, vec2(x, y)).r;
+
+        float bias = max(0.005 * (1.0 - dot(n, l)), 0.003);
+
+        float shadowPercentage = 9.0;
+        vec2 textureUnitSize = 1.0/textureSize(shadowTexture, 0);
+        for (float sampleX = -1; sampleX <=1.0; sampleX++) {
+            for (float sampleY= -1; sampleY <= 1.0; sampleY++) {
+                float s = texture(shadowTexture, vec2(x, y) + vec2(sampleX, sampleY)*textureUnitSize).r;
+                if (z > (s + bias)) {
+                    shadowPercentage--;
+                }
+            }
+        }
+        shadowPercentage = shadowPercentage/9.0;
+        fragmentColor = fragmentColor * vec4(shadowPercentage, shadowPercentage, shadowPercentage, 1.0);
+        
+        // if (z > (zMinDepth + bias)) {
+        //     fragmentColor = fragmentColor * vec4(shadow, 1.0);
+        // }
     }
 }

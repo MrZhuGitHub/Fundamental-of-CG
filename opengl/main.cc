@@ -393,8 +393,8 @@ int renderBasedOnGames202() {
     }
 
     //opengl
-    // glEnable(GL_POLYGON_OFFSET_FILL);
-    // glPolygonOffset(1, 1);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(1, 1);
     glEnable(GL_DEPTH_TEST);
 
     //load shader
@@ -403,40 +403,94 @@ int renderBasedOnGames202() {
 
     //load model
     std::vector<std::shared_ptr<model>> models;
-    auto car = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/911/911.obj");
-    glm::mat4 trans1(1.0f);
-    trans1 = glm::scale(trans1, glm::vec3(1.0, 1.0, 1.0));
-    trans1 = glm::translate(trans1, glm::vec3(0.0, 0.0, 0.0));
-    trans1 = glm::rotate(trans1, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
-    trans1 = glm::rotate(trans1, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
-    car->addInstance(trans1);
-    models.push_back(car);
+    // auto car = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/911/911.obj");
+    // glm::mat4 trans1(1.0f);
+    // trans1 = glm::scale(trans1, glm::vec3(1.0, 1.0, 1.0));
+    // trans1 = glm::translate(trans1, glm::vec3(0.0, 0.0, 0.0));
+    // trans1 = glm::rotate(trans1, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+    // trans1 = glm::rotate(trans1, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+    // car->addInstance(trans1);
+    // models.push_back(car);
+
+    auto floor = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/floor/floor.obj");
+    glm::mat4 trans2(1.0f);
+    trans2 = glm::scale(trans2, glm::vec3(100.0, 1.0, 100.0));
+    trans2 = glm::translate(trans2, glm::vec3(0.0, 0.0, 0.0));
+    trans2 = glm::rotate(trans2, glm::radians(90.0f), glm::vec3(0.0, 1.0, 0.0));
+    floor->addInstance(trans2);
+    models.push_back(floor);
 
     //camera
     kCamera = std::make_shared<camera>();
 
     glm::mat4 defaultModelMatrix = glm::ortho(-3.0f, 3.0f, -3.0f, 3.0f, -3.0f, 3.0f);
 
+    //shadow framebuffer
+    std::shared_ptr<frameBuffer> shadowFramebuffer = std::make_shared<frameBuffer>(2*SCR_WIDTH, 2*SCR_HEIGHT);
+    shadowFramebuffer->init();
+
+    //light camera
+    auto lightCamera = std::make_shared<camera>(glm::vec3(-2, 2.2, -2));
+    glm::mat4 lightCameraViewMatrix = lightCamera->getViewMatrix();
+    glm::mat4 lightCameraProjectMatrix = glm::ortho(-50.0f,50.0f, -50.0f, 50.0f, 70.0f, 170.0f);
+    glm::vec3 lightCameraPosition = lightCamera->getCameraPosition();
+
     while (!glfwWindowShouldClose(window))
     {
         // input
         processInput(window);
- 
-        // render
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //draw model
-        kModelShader->use();
-        kModelShader->setModelMatrix(defaultModelMatrix);
-        kModelShader->setViewMatrix(kCamera->getViewMatrix());
-        kModelShader->setProjectionMatrix(kCamera->getProjectMatrix());
+        {
+            //shadow map
+            shadowFramebuffer->setup();
+            glViewport(0, 0, 2*SCR_WIDTH, 2*SCR_HEIGHT);
+            // render
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        kModelShader->setLight();
-        kModelShader->setProperty(kCamera->getCameraPosition(), "camearPosition");
+            //draw model
+            kModelShader->use();
+            kModelShader->setModelMatrix(defaultModelMatrix);
+            kModelShader->setViewMatrix(lightCameraViewMatrix);
+            kModelShader->setProjectionMatrix(lightCameraProjectMatrix);
 
-        for (auto& model : models) {
-            model->drawModel(kModelShader);
+            kModelShader->setBool("shadowMap", true);
+
+            kModelShader->setLight();
+            kModelShader->setProperty(lightCameraPosition, "camearPosition");
+
+            for (auto& model : models) {
+                model->drawModel(kModelShader);
+            }
+
+            shadowFramebuffer->unload();
+        }
+
+        {
+            // render
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+            //draw model
+            kModelShader->use();
+            kModelShader->setModelMatrix(defaultModelMatrix);
+            kModelShader->setViewMatrix(kCamera->getViewMatrix());
+            kModelShader->setProjectionMatrix(kCamera->getProjectMatrix());
+
+            kModelShader->setLight();
+            kModelShader->setProperty(kCamera->getCameraPosition(), "camearPosition");
+
+            //configure shadow map
+            kModelShader->setBool("shadowMap", false);
+            kModelShader->setProperty(lightCameraProjectMatrix*lightCameraViewMatrix, "shadowMatrix");
+            glActiveTexture(GL_TEXTURE0 + shadowFramebuffer->getTexture());
+            glBindTexture(GL_TEXTURE_2D, shadowFramebuffer->getTexture());
+            kModelShader->setInt("shadowTexture", shadowFramebuffer->getTexture());
+
+            for (auto& model : models) {
+                model->drawModel(kModelShader);
+            }
         }
 
         //swap frame buffer

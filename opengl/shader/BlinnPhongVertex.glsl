@@ -13,6 +13,9 @@ out vec3 halfLightView;
 out vec3 lightDirection;
 out vec2 TexCoord;
 out vec3 viewDirection;
+out vec4 vertexPosition;
+uniform mat4 shadowMatrix;
+out vec4 CoordInLightCamera;
 void main()
 {
     vec4 vVerticPositionInModelCoordinate = modelMatrix * objPosMatrix[gl_InstanceID] * vec4(vPosition, 1.0);
@@ -21,5 +24,7 @@ void main()
     viewDirection = normalize(camearPosition - vVerticPositionInModelCoordinate.xyz);
     halfLightView = normalize(viewDirection + lightDirection); 
     TexCoord = aTexCoord;
+    vertexPosition = projectionMatrix * viewMatrix * vVerticPositionInModelCoordinate;
     gl_Position = projectionMatrix * viewMatrix * vVerticPositionInModelCoordinate;
+    CoordInLightCamera = shadowMatrix * vVerticPositionInModelCoordinate;
 }
