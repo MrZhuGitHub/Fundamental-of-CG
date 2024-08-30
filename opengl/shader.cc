@@ -149,7 +149,7 @@ void shader::setProperty(glm::vec3 property, std::string name) {
 }
 
 void shader::setLight() {
-    float lightPosition[3] = {-45, 45, -45};
+    float lightPosition[3] = {-90, 90, -90};
     auto lightPositionLocation = glGetUniformLocation(ID, "lightPosition");
     glUniform3fv(lightPositionLocation, 1, lightPosition);
 

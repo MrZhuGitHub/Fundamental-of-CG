@@ -403,19 +403,19 @@ int renderBasedOnGames202() {
 
     //load model
     std::vector<std::shared_ptr<model>> models;
-    // auto car = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/911/911.obj");
-    // glm::mat4 trans1(1.0f);
-    // trans1 = glm::scale(trans1, glm::vec3(1.0, 1.0, 1.0));
-    // trans1 = glm::translate(trans1, glm::vec3(0.0, 0.0, 0.0));
-    // trans1 = glm::rotate(trans1, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
-    // trans1 = glm::rotate(trans1, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
-    // car->addInstance(trans1);
-    // models.push_back(car);
+    auto car = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/911/911.obj");
+    glm::mat4 trans1(1.0f);
+    trans1 = glm::scale(trans1, glm::vec3(1.0, 1.0, 1.0));
+    trans1 = glm::translate(trans1, glm::vec3(-50.0, 0.0, -50.0));
+    trans1 = glm::rotate(trans1, glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+    trans1 = glm::rotate(trans1, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+    car->addInstance(trans1);
+    models.push_back(car);
 
     auto floor = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/floor/floor.obj");
     glm::mat4 trans2(1.0f);
-    trans2 = glm::scale(trans2, glm::vec3(100.0, 1.0, 100.0));
-    trans2 = glm::translate(trans2, glm::vec3(0.0, 0.0, 0.0));
+    trans2 = glm::scale(trans2, glm::vec3(7.0, 1.0, 7.0));
+    trans2 = glm::translate(trans2, glm::vec3(-10.0, 0.0, 10.0));
     trans2 = glm::rotate(trans2, glm::radians(90.0f), glm::vec3(0.0, 1.0, 0.0));
     floor->addInstance(trans2);
     models.push_back(floor);
@@ -426,13 +426,13 @@ int renderBasedOnGames202() {
     glm::mat4 defaultModelMatrix = glm::ortho(-3.0f, 3.0f, -3.0f, 3.0f, -3.0f, 3.0f);
 
     //shadow framebuffer
-    std::shared_ptr<frameBuffer> shadowFramebuffer = std::make_shared<frameBuffer>(2*SCR_WIDTH, 2*SCR_HEIGHT);
+    std::shared_ptr<frameBuffer> shadowFramebuffer = std::make_shared<frameBuffer>(3*SCR_WIDTH, 3*SCR_HEIGHT);
     shadowFramebuffer->init();
 
     //light camera
-    auto lightCamera = std::make_shared<camera>(glm::vec3(-2, 2.2, -2));
+    auto lightCamera = std::make_shared<camera>(glm::vec3(-2, 1.5, -2));
     glm::mat4 lightCameraViewMatrix = lightCamera->getViewMatrix();
-    glm::mat4 lightCameraProjectMatrix = glm::ortho(-50.0f,50.0f, -50.0f, 50.0f, 70.0f, 170.0f);
+    glm::mat4 lightCameraProjectMatrix = glm::ortho(-100.0f,100.0f, -100.0f, 100.0f, 20.0f, 220.0f);
     glm::vec3 lightCameraPosition = lightCamera->getCameraPosition();
 
     while (!glfwWindowShouldClose(window))
@@ -443,7 +443,7 @@ int renderBasedOnGames202() {
         {
             //shadow map
             shadowFramebuffer->setup();
-            glViewport(0, 0, 2*SCR_WIDTH, 2*SCR_HEIGHT);
+            glViewport(0, 0, 3*SCR_WIDTH, 3*SCR_HEIGHT);
             // render
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -455,6 +455,7 @@ int renderBasedOnGames202() {
             kModelShader->setProjectionMatrix(lightCameraProjectMatrix);
 
             kModelShader->setBool("shadowMap", true);
+            kModelShader->setBool("shadow_enable", true);
 
             kModelShader->setLight();
             kModelShader->setProperty(lightCameraPosition, "camearPosition");
@@ -463,11 +464,13 @@ int renderBasedOnGames202() {
                 model->drawModel(kModelShader);
             }
 
+            //shadowFramebuffer->blitToFrameBuffer(0);
+
             shadowFramebuffer->unload();
         }
 
         {
-            // render
+            //render
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
@@ -483,10 +486,11 @@ int renderBasedOnGames202() {
 
             //configure shadow map
             kModelShader->setBool("shadowMap", false);
+            kModelShader->setBool("shadow_enable", true);
             kModelShader->setProperty(lightCameraProjectMatrix*lightCameraViewMatrix, "shadowMatrix");
             glActiveTexture(GL_TEXTURE0 + shadowFramebuffer->getTexture());
-            glBindTexture(GL_TEXTURE_2D, shadowFramebuffer->getTexture());
             kModelShader->setInt("shadowTexture", shadowFramebuffer->getTexture());
+            glBindTexture(GL_TEXTURE_2D, shadowFramebuffer->getTexture());
 
             for (auto& model : models) {
                 model->drawModel(kModelShader);

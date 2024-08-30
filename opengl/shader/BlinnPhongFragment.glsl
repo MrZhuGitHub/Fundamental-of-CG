@@ -19,6 +19,7 @@ uniform sampler2D texture_specular1;
 uniform sampler2D texture_specular2;
 uniform int texture_enable;
 uniform bool shadowMap;
+uniform bool shadow_enable;
 uniform sampler2D shadowTexture;
 in vec4 CoordInLightCamera;
 void main()
@@ -55,32 +56,31 @@ void main()
         fragmentColor = vec4(color, 1.0);
     }
 
-    if (shadowMap) {
-        float zDepth = 0.5*vertexPosition.z/vertexPosition.w + 0.5f;
-        fragmentColor = vec4(zDepth, zDepth, zDepth, 1.0);
-    } else {
-        float z =  0.5*CoordInLightCamera.z/CoordInLightCamera.w + 0.5f;
-        float x = 0.5*CoordInLightCamera.x/CoordInLightCamera.w + 0.5f;
-        float y = 0.5*CoordInLightCamera.y/CoordInLightCamera.w + 0.5f;
-        float zMinDepth = texture(shadowTexture, vec2(x, y)).r;
+    if (shadow_enable) {
+        if (shadowMap) {
+            float zDepth = 0.5*vertexPosition.z/vertexPosition.w + 0.5f;
+            fragmentColor = vec4(zDepth, zDepth, zDepth, 1.0);
+        } else {
+            float z =  0.5*CoordInLightCamera.z/CoordInLightCamera.w + 0.5f;
+            float x = 0.5*CoordInLightCamera.x/CoordInLightCamera.w + 0.5f;
+            float y = 0.5*CoordInLightCamera.y/CoordInLightCamera.w + 0.5f;
+            float zMinDepth = texture(shadowTexture, vec2(x, y)).r;
 
-        float bias = max(0.005 * (1.0 - dot(n, l)), 0.003);
+            // Percentage Closer Filter
+            float bias = max(0.005 * (1.0 - dot(n, l)), 0.004);
 
-        float shadowPercentage = 9.0;
-        vec2 textureUnitSize = 1.0/textureSize(shadowTexture, 0);
-        for (float sampleX = -1; sampleX <=1.0; sampleX++) {
-            for (float sampleY= -1; sampleY <= 1.0; sampleY++) {
-                float s = texture(shadowTexture, vec2(x, y) + vec2(sampleX, sampleY)*textureUnitSize).r;
-                if (z > (s + bias)) {
-                    shadowPercentage--;
+            float shadowPercentage = 25.0;
+            vec2 textureUnitSize = 1.0/textureSize(shadowTexture, 0);
+            for (float sampleX = -2; sampleX <=2.0; sampleX++) {
+                for (float sampleY= -2; sampleY <= 2.0; sampleY++) {
+                    float s = texture(shadowTexture, vec2(x, y) + vec2(sampleX, sampleY)*textureUnitSize).r;
+                    if (z > (s + bias)) {
+                        shadowPercentage--;
+                    }
                 }
             }
+            shadowPercentage = shadowPercentage/25.0;
+            fragmentColor = fragmentColor * vec4(shadowPercentage, shadowPercentage, shadowPercentage, 1.0);
         }
-        shadowPercentage = shadowPercentage/9.0;
-        fragmentColor = fragmentColor * vec4(shadowPercentage, shadowPercentage, shadowPercentage, 1.0);
-        
-        // if (z > (zMinDepth + bias)) {
-        //     fragmentColor = fragmentColor * vec4(shadow, 1.0);
-        // }
     }
 }
