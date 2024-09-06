@@ -430,7 +430,7 @@ int renderBasedOnGames202() {
     shadowFramebuffer->init();
 
     //light camera
-    auto lightCamera = std::make_shared<camera>(glm::vec3(-2, 1.5, -2));
+    auto lightCamera = std::make_shared<camera>(glm::vec3(-2, 2, -2));
     glm::mat4 lightCameraViewMatrix = lightCamera->getViewMatrix();
     glm::mat4 lightCameraProjectMatrix = glm::ortho(-100.0f,100.0f, -100.0f, 100.0f, 20.0f, 220.0f);
     glm::vec3 lightCameraPosition = lightCamera->getCameraPosition();
@@ -492,9 +492,14 @@ int renderBasedOnGames202() {
             kModelShader->setInt("shadowTexture", shadowFramebuffer->getTexture());
             glBindTexture(GL_TEXTURE_2D, shadowFramebuffer->getTexture());
 
-            for (auto& model : models) {
-                model->drawModel(kModelShader);
-            }
+            // for (auto& model : models) {
+            //     model->drawModel(kModelShader);
+            // }
+
+            kModelShader->setBool("shadow_enable", false);
+            models[0]->drawModel(kModelShader);
+            kModelShader->setBool("shadow_enable", true);
+            models[1]->drawModel(kModelShader);
         }
 
         //swap frame buffer
