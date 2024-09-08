@@ -492,14 +492,14 @@ int renderBasedOnGames202() {
             kModelShader->setInt("shadowTexture", shadowFramebuffer->getTexture());
             glBindTexture(GL_TEXTURE_2D, shadowFramebuffer->getTexture());
 
-            // for (auto& model : models) {
-            //     model->drawModel(kModelShader);
-            // }
+            for (auto& model : models) {
+                model->drawModel(kModelShader);
+            }
 
-            kModelShader->setBool("shadow_enable", false);
-            models[0]->drawModel(kModelShader);
-            kModelShader->setBool("shadow_enable", true);
-            models[1]->drawModel(kModelShader);
+            // kModelShader->setBool("shadow_enable", false);
+            // models[0]->drawModel(kModelShader);
+            // kModelShader->setBool("shadow_enable", true);
+            // models[1]->drawModel(kModelShader);
         }
 
         //swap frame buffer

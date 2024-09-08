@@ -72,7 +72,7 @@ void main()
             float lv = 1.0/sqrt(3.0);
             float bias = 10.0*abs((shadowMapResolution*sqrt(1.0 - dot(n, vec3(-lv, lv, -lv))*dot(n, vec3(-lv, lv, -lv))))/(abs(dot(n, vec3(-lv, lv, -lv)))*2.0));
             bias = max(bias, 0.003);
-            bias = min(bias, 0.03);
+            bias = min(bias, 0.0045);
             //bias = 0.003;
 
             //PCS size
