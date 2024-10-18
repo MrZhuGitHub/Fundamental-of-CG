@@ -61,25 +61,62 @@ void main()
             float zDepth = 0.5*vertexPosition.z/vertexPosition.w + 0.5f;
             fragmentColor = vec4(zDepth, zDepth, zDepth, 1.0);
         } else {
+            // PCSS
             float z =  0.5*CoordInLightCamera.z/CoordInLightCamera.w + 0.5f;
             float x = 0.5*CoordInLightCamera.x/CoordInLightCamera.w + 0.5f;
             float y = 0.5*CoordInLightCamera.y/CoordInLightCamera.w + 0.5f;
-            float zMinDepth = texture(shadowTexture, vec2(x, y)).r;
-
-            // Percentage Closer Filter
-            float bias = 0.003;
-            float shadowPercentage = 121.0;
             vec2 textureUnitSize = 1.0/textureSize(shadowTexture, 0);
-            for (float sampleX = -5; sampleX <=5.0; sampleX++) {
-                for (float sampleY= -5; sampleY <= 5.0; sampleY++) {
+
+            //bias size
+            float shadowMapResolution = max(textureUnitSize.x, textureUnitSize.y);
+            float lv = 1.0/sqrt(3.0);
+            float bias = 10.0*abs((shadowMapResolution*sqrt(1.0 - dot(n, vec3(-lv, lv, -lv))*dot(n, vec3(-lv, lv, -lv))))/(abs(dot(n, vec3(-lv, lv, -lv)))*2.0));
+            bias = max(bias, 0.003);
+            bias = min(bias, 0.0045);
+            //bias = 0.003;
+
+            //PCS size
+            float count = 0.0;
+            float sampleSize = 0.0;
+            for (float sampleX = -10; sampleX <= 10; sampleX++) {
+                for (float sampleY= -10; sampleY <= 10; sampleY++) {
                     float s = texture(shadowTexture, vec2(x, y) + vec2(sampleX, sampleY)*textureUnitSize).r;
                     float index = max(1.0, sqrt(sampleX*sampleX+sampleY*sampleY));
                     if (z > (s + index*bias)) {
+                        count++;
+                        sampleSize = sampleSize + 100.0*(z - s)/s;
+                    }
+                }
+            }
+
+            float actualSampleSize = 10.0;
+            if (count > 0.0) {
+                sampleSize = sampleSize/count;
+                sampleSize = min(sampleSize, 10.0);
+                sampleSize = max(sampleSize, 1.0);
+                actualSampleSize = floor(sampleSize);
+            } else {
+                actualSampleSize = 1.0;
+            }
+
+            //compute shadow
+            float shadowPercentage = (2*actualSampleSize+1)*(2*actualSampleSize+1);
+            float isvalid = 0.0;
+            for (float sampleX = -actualSampleSize; sampleX <= actualSampleSize; sampleX++) {
+                for (float sampleY= -actualSampleSize; sampleY <= actualSampleSize; sampleY++) {
+                    float s = texture(shadowTexture, vec2(x, y) + vec2(sampleX, sampleY)*textureUnitSize).r;
+                    float index = max(1.0, sqrt(sampleX*sampleX+sampleY*sampleY));
+                    if (sqrt(sampleX*sampleX+sampleY*sampleY) <= actualSampleSize) {
+                        isvalid++;
+                        if (z > (s + index*bias)) {
+                            shadowPercentage--;
+                        }
+                    } else {
                         shadowPercentage--;
                     }
                 }
             }
-            shadowPercentage = shadowPercentage/121.0;
+            shadowPercentage = shadowPercentage/isvalid;
             fragmentColor = fragmentColor * vec4(shadowPercentage*0.7 + 0.3, shadowPercentage*0.7 + 0.3, shadowPercentage*0.7 + 0.3, 1.0);
         }
     }
