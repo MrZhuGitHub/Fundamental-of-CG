@@ -4,6 +4,10 @@
 #include "BRDF.h"
 
 #include <memory>
+#include <vector>
+
+#include <glad/glad.h>
+#include <glew.h>
 
 namespace CG {
 
@@ -21,15 +25,19 @@ public:
 private:
     static unsigned int preComputerEavg();
     static unsigned int preComputerMicroModelBrdf();
-    static float MicrofacetModelWithoutFresnel(glm::vec3 inDirection, glm::vec3 outDirection, float roughness, glm::vec3 normal = glm::vec3(0.0, 0.0, 1.0));
-    static float fresnel(glm::vec3 inDirection, glm::vec3 outDirection, float roughness, glm::vec3 normal = glm::vec3(0.0, 0.0, 1.0));
-    static float normalDistributionFunction(glm::vec3 inDirection, glm::vec3 outDirection, float roughness, glm::vec3 normal = glm::vec3(0.0, 0.0, 1.0)); //GGX Model
-    static float shadowMasking(glm::vec3 inDirection, glm::vec3 outDirection, float roughness, glm::vec3 normal = glm::vec3(0.0, 0.0, 1.0)); //Smith Model
-    static glm::vec3 ImportanceSampleFromGGX(); //sample normal
+    static float MicrofacetModelWithoutFresnel(glm::vec3 lightDirection, glm::vec3 viewDirection, float roughness, glm::vec3 half);
+    static glm::vec3 fresnel(glm::vec3 lightDirection, glm::vec3 viewDirection, glm::vec3 half, glm::vec3 R);
+    static float normalDistributionFunction(glm::vec3 lightDirection, glm::vec3 viewDirection, float roughness, glm::vec3 half); //GGX Model
+    static float shadowMasking(glm::vec3 lightDirection, glm::vec3 viewDirection, float roughness, glm::vec3 half); //Smith Model
+    static glm::vec3 ImportanceSampleFromGGX(const float roughness, const glm::vec3 viewDirection); //sample normal
     static float getPDFByNormalFromGGX(glm::vec3 normal);
 
-    glm::vec3 getValueFromEavgTexture();
-    glm::vec3 getValueFromMicroModelBrdfTexture(const float angle, const glm::vec3 fresnel = glm::vec3(1.0, 1.0, 1.0));
+    glm::vec3 readValueFromEavgTexture(const float roughness);
+    glm::vec3 readValueFromMicroModelBrdfTexture(const float sinTheta, const float roughness, const glm::vec3 fresnel = glm::vec3(1.0, 1.0, 1.0));
+
+    static void generateTexture();
+
+    static unsigned int loadTexture(std::string file);
 
 private:
     glm::vec3 fresnel_;
@@ -37,6 +45,8 @@ private:
     glm::vec3 fresnelAverage_;
     static unsigned int kEavgTexture;
     static unsigned int kMicroModelBrdfTexture;
+    static std::vector<float> kMicroModelBrdfTextureData;
+    static std::vector<float> kEavgTextureData;
 }
 
 }
