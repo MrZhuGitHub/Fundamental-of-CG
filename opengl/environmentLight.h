@@ -1,25 +1,25 @@
-#ifndef _ENVIRONMENT_H_
-#define _ENVIRONMENT_H_
+// #ifndef _ENVIRONMENT_H_
+// #define _ENVIRONMENT_H_
 
-#include "light.h"
+// #include "light.h"
 
-namespace CG {
+// namespace CG {
 
-class EnvironmentLight : public Light {
-public:
-    EnvironmentLight(std::string IBL);
+// class EnvironmentLight : public Light {
+// public:
+//     EnvironmentLight(std::string IBL);
 
-    glm::vec3 getRadiance(glm::vec3 direction) override;
+//     glm::vec3 getRadiance(glm::vec3 direction) override;
 
-    bool preComputerEnvironmentLight();
+//     bool preComputerEnvironmentLight();
 
-    unsigned int getPreComputerResult();
+//     unsigned int getPreComputerResult();
 
-public:
-    std::string IBL_;
-    unsigned int IblMipmap_;
-}
+// public:
+//     std::string IBL_;
+//     unsigned int IblMipmap_;
+// }
 
-}
+// }
 
-#endif
+// #endif

@@ -1,3 +1,5 @@
+#include "microfacetBrdf.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
  
@@ -13,6 +15,8 @@
 #include "framebuffer.h"
 
 #include "glm/gtx/string_cast.hpp"
+
+
 
 using namespace CG;
 
@@ -512,8 +516,13 @@ int renderBasedOnGames202() {
     return 0;
 }
 
+void renderMicrofacetBrdf() {
+    MicrofacetBRDF::preComputer();
+}
+
 int main() {
     //renderBev();
-    renderBasedOnGames202();
+    //renderBasedOnGames202();
+    renderMicrofacetBrdf();
     return 0;
 }

@@ -12,7 +12,7 @@ public:
     virtual glm::vec3 getBrdf(const glm::vec3& view, const glm::vec3& light, const glm::vec3& normal) = 0; 
 
 private:
-}
+};
 
 }
 

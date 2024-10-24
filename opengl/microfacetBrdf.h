@@ -5,9 +5,7 @@
 
 #include <memory>
 #include <vector>
-
-#include <glad/glad.h>
-#include <glew.h>
+#include <string>
 
 namespace CG {
 
@@ -32,12 +30,12 @@ private:
     static glm::vec3 ImportanceSampleFromGGX(const float roughness, const glm::vec3 viewDirection); //sample normal
     static float getPDFByNormalFromGGX(glm::vec3 normal);
 
-    glm::vec3 readValueFromEavgTexture(const float roughness);
-    glm::vec3 readValueFromMicroModelBrdfTexture(const float sinTheta, const float roughness, const glm::vec3 fresnel = glm::vec3(1.0, 1.0, 1.0));
+    static glm::vec3 readValueFromEavgTexture(const float roughness);
+    static glm::vec3 readValueFromMicroModelBrdfTexture(const float sinTheta, const float roughness, const glm::vec3 fresnel = glm::vec3(1.0, 1.0, 1.0));
 
     static void generateTexture();
 
-    static unsigned int loadTexture(std::string file);
+    static unsigned int loadTexture(const char* file);
 
 private:
     glm::vec3 fresnel_;
@@ -47,7 +45,7 @@ private:
     static unsigned int kMicroModelBrdfTexture;
     static std::vector<float> kMicroModelBrdfTextureData;
     static std::vector<float> kEavgTextureData;
-}
+};
 
 }
 

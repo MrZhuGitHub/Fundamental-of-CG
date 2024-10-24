@@ -1,68 +1,68 @@
-#include "screenSpaceReflections.h"
+// #include "screenSpaceReflections.h"
 
-namespace CG {
+// namespace CG {
 
-ScreenSpaceReflections::ScreenSpaceReflections(std::shared_ptr<Environment> environmentLight)
-    : environmentLight_(environmentLight) {
+// ScreenSpaceReflections::ScreenSpaceReflections(std::shared_ptr<Environment> environmentLight)
+//     : environmentLight_(environmentLight) {
 
-    MicrofacetBRDF::getPreComputerResult(preComputerEavg_, preComputerBrdf_);
-    environmentLight_ = environmentLight_->getPreComputerResult();
-}
+//     MicrofacetBRDF::getPreComputerResult(preComputerEavg_, preComputerBrdf_);
+//     environmentLight_ = environmentLight_->getPreComputerResult();
+// }
 
-ScreenSpaceReflections::~ScreenSpaceReflections() {
+// ScreenSpaceReflections::~ScreenSpaceReflections() {
 
-}
+// }
 
-void ScreenSpaceReflections::CreateShadingProgram() {
-    if (!CreateShadowMapProgram()) {
-        return;
-    }
+// void ScreenSpaceReflections::CreateShadingProgram() {
+//     if (!CreateShadowMapProgram()) {
+//         return;
+//     }
 
-    if (!CreateDirectShadingProgram()) {
-        return;
-    }
+//     if (!CreateDirectShadingProgram()) {
+//         return;
+//     }
 
-    if (!CreateIndirectShadingProgram()) {
-        return;
-    }
-}
+//     if (!CreateIndirectShadingProgram()) {
+//         return;
+//     }
+// }
 
-void ScreenSpaceReflections::Render() {
-    if (!GenerateShadowMap()) {
-        return;
-    }
+// void ScreenSpaceReflections::Render() {
+//     if (!GenerateShadowMap()) {
+//         return;
+//     }
 
-    if (!CreateDirectShadingProgram()) {
+//     if (!CreateDirectShadingProgram()) {
 
-    }
+//     }
 
-    if (!CreateIndirectShadingProgram()) {
+//     if (!CreateIndirectShadingProgram()) {
         
-    }
-}
+//     }
+// }
 
-bool ScreenSpaceReflections::CreateShadowMapProgram() {
+// bool ScreenSpaceReflections::CreateShadowMapProgram() {
 
-}
+// }
 
-bool ScreenSpaceReflections::GenerateShadowMap() {
+// bool ScreenSpaceReflections::GenerateShadowMap() {
 
-}
+// }
 
-bool ScreenSpaceReflections::CreateDirectShadingProgram() {
+// bool ScreenSpaceReflections::CreateDirectShadingProgram() {
 
-}
+// }
 
-bool ScreenSpaceReflections::ShadingDirectLgiht() {
+// bool ScreenSpaceReflections::ShadingDirectLgiht() {
 
-}
+// }
 
-bool ScreenSpaceReflections::CreateIndirectShadingProgram() {
+// bool ScreenSpaceReflections::CreateIndirectShadingProgram() {
 
-}
+// }
 
-bool ScreenSpaceReflections::ShadingIndirectLight() {
+// bool ScreenSpaceReflections::ShadingIndirectLight() {
 
-}
+// }
 
-}
+// }
