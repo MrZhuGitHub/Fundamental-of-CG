@@ -21,7 +21,7 @@ unsigned int MicrofacetBRDF::kMicroModelBrdfTexture = 0;
 std::vector<float> MicrofacetBRDF::kMicroModelBrdfTextureData;
 std::vector<float> MicrofacetBRDF::kEavgTextureData;
 
-#define SAMPLE_COUNT 10000
+#define SAMPLE_COUNT 100000
 #define PI 3.14159
 MicrofacetBRDF::MicrofacetBRDF(glm::vec3 fresnel, float roughness)
     : fresnel_(fresnel)
@@ -57,20 +57,35 @@ bool MicrofacetBRDF::preComputer() {
 }
 
 unsigned int MicrofacetBRDF::preComputerEavg() {
-    //MicrofacetBRDF::kEavgTextureData.resize(100*100*3);
-    for (float roughness = 0.01; roughness <= 1.0; roughness += 0.01) {
+    for (unsigned int i = 1; i <= 100; i++) {
         glm::vec3 Eavg = glm::vec3(0.0, 0.0, 0.0);
-        for (float cosTheta = 0.01; cosTheta <= 1.0; cosTheta+=0.01) {
-            float sinTheta = sqrtf(1.0 - cosTheta*cosTheta);
-            Eavg = Eavg + glm::vec3(2.0, 2.0, 2.0)*glm::vec3(0.01, 0.01, 0.01)*glm::vec3(sinTheta, sinTheta, sinTheta)*MicrofacetBRDF::readValueFromMicroModelBrdfTexture(cosTheta, roughness);
+        for (unsigned int j = 1; j <= 100; j++) {
+            float sinTheta = (float)j/200.0;
+            float cosTheta = sqrtf(1.0 - sinTheta*sinTheta);
+            Eavg = Eavg + glm::vec3(2.0, 2.0, 2.0)*glm::vec3(0.01, 0.01, 0.01)*glm::vec3(sinTheta, sinTheta, sinTheta)*MicrofacetBRDF::readValueFromMicroModelBrdfTexture(j, i);
         }
-
-        for (float cosTheta = 0.0; cosTheta < 1.0; cosTheta+=0.01) {
+        for (unsigned int j = 1; j <= 100; j++) {
             MicrofacetBRDF::kEavgTextureData.push_back(Eavg[0]);
             MicrofacetBRDF::kEavgTextureData.push_back(Eavg[1]);
             MicrofacetBRDF::kEavgTextureData.push_back(Eavg[2]);
         }
     }
+    // for (float roughness = 0.01; roughness <= 1.0; roughness += 0.01) {
+    //     glm::vec3 Eavg = glm::vec3(0.0, 0.0, 0.0);
+    //     for (float sinTheta = 0.005; sinTheta < 1.0; sinTheta+=0.01) {
+    //         float cosTheta = sqrtf(1.0 - sinTheta*sinTheta);
+    //         cosTheta = (unsigned int)(cosTheta*100)/100.0f;
+    //         Eavg = Eavg + glm::vec3(2.0, 2.0, 2.0)*glm::vec3(0.01, 0.01, 0.01)*glm::vec3(sinTheta, sinTheta, sinTheta)*MicrofacetBRDF::readValueFromMicroModelBrdfTexture(cosTheta, roughness);
+    //     }
+
+    //     std::cout << roughness << ":" << Eavg[0] << "," << Eavg[1] << "," << Eavg[2] << std::endl;
+
+    //     for (float cosTheta = 0.0; cosTheta < 1.0; cosTheta+=0.01) {
+    //         MicrofacetBRDF::kEavgTextureData.push_back(Eavg[0]);
+    //         MicrofacetBRDF::kEavgTextureData.push_back(Eavg[1]);
+    //         MicrofacetBRDF::kEavgTextureData.push_back(Eavg[2]);
+    //     }
+    // }
 }
 
 unsigned int MicrofacetBRDF::preComputerMicroModelBrdf() {
@@ -102,6 +117,8 @@ unsigned int MicrofacetBRDF::preComputerMicroModelBrdf() {
             //MicrofacetBRDF::kMicroModelBrdfTextureData[100*3*100*(sinTheta - 0.01) + 3*100*(roughness - 0.01)] = brdf1;
             //MicrofacetBRDF::kMicroModelBrdfTextureData[100*3*100*(sinTheta - 0.01) + 3*100*(roughness - 0.01) + 1] = brdf2;
             //MicrofacetBRDF::kMicroModelBrdfTextureData[100*3*100*(sinTheta - 0.01) + 3*100*(roughness - 0.01) + 2] = 0.0;
+
+            //std::cout << (brdf1 + brdf2) << std::endl;
             MicrofacetBRDF::kMicroModelBrdfTextureData.push_back(brdf1);
             MicrofacetBRDF::kMicroModelBrdfTextureData.push_back(brdf2);
             MicrofacetBRDF::kMicroModelBrdfTextureData.push_back(0.0);
@@ -175,9 +192,9 @@ glm::vec3 MicrofacetBRDF::readValueFromEavgTexture(const float roughness) {
     return glm::vec3(Eavg, Eavg, Eavg);
 }
 
-glm::vec3 MicrofacetBRDF::readValueFromMicroModelBrdfTexture(const float cosTheta, const float roughness, const glm::vec3 fresnel) {
-    float brdf1 = MicrofacetBRDF::kMicroModelBrdfTextureData[100*3*100*(cosTheta - 0.01) + 3*100*(roughness - 0.01)];
-    float brdf2 = MicrofacetBRDF::kMicroModelBrdfTextureData[100*3*100*(cosTheta - 0.01) + 3*100*(roughness - 0.01) + 1];
+glm::vec3 MicrofacetBRDF::readValueFromMicroModelBrdfTexture(const unsigned int cosTheta, const unsigned int roughness, const glm::vec3 fresnel) {
+    float brdf1 = MicrofacetBRDF::kMicroModelBrdfTextureData[100*3*(cosTheta - 1) + 3*(roughness - 1)];
+    float brdf2 = MicrofacetBRDF::kMicroModelBrdfTextureData[100*3*(cosTheta - 1) + 3*(roughness - 1) + 1];
     return (brdf1*fresnel + brdf2*glm::vec3(1.0, 1.0, 1.0));
 }
 

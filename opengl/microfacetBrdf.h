@@ -31,7 +31,7 @@ private:
     static float getPDFByNormalFromGGX(glm::vec3 normal);
 
     static glm::vec3 readValueFromEavgTexture(const float roughness);
-    static glm::vec3 readValueFromMicroModelBrdfTexture(const float sinTheta, const float roughness, const glm::vec3 fresnel = glm::vec3(1.0, 1.0, 1.0));
+    static glm::vec3 readValueFromMicroModelBrdfTexture(const unsigned int cosTheta, const unsigned int roughness, const glm::vec3 fresnel = glm::vec3(1.0, 1.0, 1.0));
 
     static void generateTexture();
 
