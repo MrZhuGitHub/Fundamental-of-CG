@@ -1,4 +1,5 @@
 #include "microfacetBrdf.h"
+#include "environmentLight.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -516,13 +517,61 @@ int renderBasedOnGames202() {
     return 0;
 }
 
-void renderMicrofacetBrdf() {
+void PreComputeMicrofacetBrdf() {
     MicrofacetBRDF::preComputer();
+}
+
+int preComputePrefilterEnvironmentMap() {
+
+    // glfw: initialize and configure
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+ 
+    // glfw window creation
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    if (window == NULL)
+    {
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+    glfwWindowHint(GLFW_SAMPLES, 16);
+ 
+    // glad: load all OpenGL function pointers
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        return -1;
+    }
+
+    std::map<CubeTextureId, imageFilePath> IBLs = {
+        {CUBE_TEXTURE_DOWN,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/down.jpg"},
+        {CUBE_TEXTURE_UP,    "/opengles/Fundamental-of-CG/opengl/ibl/sky/up.jpg"},
+        {CUBE_TEXTURE_FRONT, "/opengles/Fundamental-of-CG/opengl/ibl/sky/front.jpg"},
+        {CUBE_TEXTURE_BACK,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/back.jpg"},
+        {CUBE_TEXTURE_LEFT,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/left.jpg"},
+        {CUBE_TEXTURE_RIGHT, "/opengles/Fundamental-of-CG/opengl/ibl/sky/right.jpg"},      
+    };
+    std::shared_ptr<EnvironmentLight> prefilterEnvironmentMap = std::make_shared<EnvironmentLight>(IBLs, 512, 512);
+    prefilterEnvironmentMap->preComputerEnvironmentLight(window);
+
+    // optional: de-allocate all resources
+    glfwTerminate();
 }
 
 int main() {
     //renderBev();
     //renderBasedOnGames202();
-    renderMicrofacetBrdf();
+    //PreComputeMicrofacetBrdf();
+    preComputePrefilterEnvironmentMap();
     return 0;
 }
