@@ -533,7 +533,7 @@ int preComputePrefilterEnvironmentMap() {
 #endif
  
     // glfw window creation
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 800, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -544,7 +544,7 @@ int preComputePrefilterEnvironmentMap() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    glfwWindowHint(GLFW_SAMPLES, 16);
+    //glfwWindowHint(GLFW_SAMPLES, 16);
  
     // glad: load all OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -562,7 +562,14 @@ int preComputePrefilterEnvironmentMap() {
         {CUBE_TEXTURE_RIGHT, "/opengles/Fundamental-of-CG/opengl/ibl/sky/right.jpg"},      
     };
     std::shared_ptr<EnvironmentLight> prefilterEnvironmentMap = std::make_shared<EnvironmentLight>(IBLs, 512, 512);
-    prefilterEnvironmentMap->preComputerEnvironmentLight(window);
+
+    while (!glfwWindowShouldClose(window))
+    {
+        // input
+        processInput(window);
+        prefilterEnvironmentMap->preComputerEnvironmentLight(window);
+        glfwPollEvents();
+    }
 
     // optional: de-allocate all resources
     glfwTerminate();

@@ -18,12 +18,6 @@ EnvironmentLight::EnvironmentLight(std::map<CubeTextureId, imageFilePath> IBLs, 
     , iblResolutionWidth_(width)
     , iblResolutionHeight_(height) {
 
-    cubeTexture_ = gernerateCubeTexture();
-    IblMipmapTexture_ = gerneratePrefilterMap();
-
-    cubeRenderShader_ = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/PrefilterIBLVertex.glsl",
-                                                 "/opengles/Fundamental-of-CG/opengl/shader/PrefilterIBLFragment.glsl");
-
     cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_DOWN,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 1.0, 0.0))));
     cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_UP,    glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 0.0))));
     cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_FRONT, glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, 1.0, 0.0))));
@@ -38,6 +32,14 @@ EnvironmentLight::EnvironmentLight(std::map<CubeTextureId, imageFilePath> IBLs, 
     cubemapDirections_.insert(std::make_pair(CUBE_TEXTURE_BACK,  GL_TEXTURE_CUBE_MAP_POSITIVE_Z));
     cubemapDirections_.insert(std::make_pair(CUBE_TEXTURE_LEFT,  GL_TEXTURE_CUBE_MAP_NEGATIVE_X));
     cubemapDirections_.insert(std::make_pair(CUBE_TEXTURE_RIGHT, GL_TEXTURE_CUBE_MAP_POSITIVE_X));
+
+    cubeTexture_ = gernerateCubeTexture();
+    IblMipmapTexture_ = gerneratePrefilterMap();
+
+    cubeRenderShader_ = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/PrefilterIBLVertex.glsl",
+                                                 "/opengles/Fundamental-of-CG/opengl/shader/PrefilterIBLFragment.glsl");
+
+    initCubeRender();
 }
 
 glm::vec3 EnvironmentLight::getRadiance(glm::vec3 direction, float roughness) {
@@ -83,7 +85,11 @@ bool EnvironmentLight::preComputerEnvironmentLight(GLFWwindow* window) {
 
             glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-            cubeRender();
+            glBindVertexArray(VAO_);
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+
+            glBindVertexArray(0);
 
             //todo: render to screen
 
@@ -93,10 +99,7 @@ bool EnvironmentLight::preComputerEnvironmentLight(GLFWwindow* window) {
 
             //swap frame buffer
             glfwSwapBuffers(window);
-            glfwPollEvents();
-
-            std::cout << "complete one render" << std::endl;
-
+            
             std::this_thread::sleep_for(std::chrono::seconds(3));
         }
     }
@@ -118,7 +121,7 @@ unsigned int EnvironmentLight::gernerateCubeTexture() {
     for (auto& image : IBLs_) {
         unsigned char* data = stbi_load(image.second.c_str(), &width, &height, &nrChannnels, 0);
         if (data) {
-            glTexImage2D(image.first, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(cubemapDirections_.at(image.first), 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             stbi_image_free(data); 
         } else {
             std::cout << "Cubemap texture failed to load at path: " << image.second.c_str() << std::endl;
@@ -126,7 +129,6 @@ unsigned int EnvironmentLight::gernerateCubeTexture() {
             exit(0); 
         }
     }
-
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -139,7 +141,7 @@ unsigned int EnvironmentLight::gernerateCubeTexture() {
     return textureID;
 }
 
-void EnvironmentLight::cubeRender() {
+void EnvironmentLight::initCubeRender() {
 
         float cube[] = {
             // back face
@@ -186,23 +188,27 @@ void EnvironmentLight::cubeRender() {
             -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
         };
 
-        unsigned int VBO;
-        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &VBO_);
+        glGenVertexArrays(1, &VAO_);
 
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBindVertexArray(VAO_);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_);
 
-        glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, 6*6*8*sizeof(GL_FLOAT), cube, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GL_FLOAT), (void*)0);
+
         glEnableVertexAttribArray(0);
 
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0 + 3 * sizeof(float));
+        
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GL_FLOAT), (void*)0 + 3 * sizeof(float));
         glEnableVertexAttribArray(1);
 
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0 + 6 * sizeof(float));
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(GL_FLOAT), (void*)0 + 6 * sizeof(float));
         glEnableVertexAttribArray(2);
 
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
 }
 
 unsigned int EnvironmentLight::gerneratePrefilterMap() {
@@ -210,7 +216,7 @@ unsigned int EnvironmentLight::gerneratePrefilterMap() {
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
     for (auto& image : IBLs_) {
-        glTexImage2D(image.first, 0, GL_RGB, iblResolutionWidth_, iblResolutionHeight_, 0, GL_RGB, GL_FLOAT, nullptr);
+        glTexImage2D(cubemapDirections_.at(image.first), 0, GL_RGB, iblResolutionWidth_, iblResolutionHeight_, 0, GL_RGB, GL_FLOAT, nullptr);
     }
 
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);

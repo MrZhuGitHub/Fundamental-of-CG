@@ -47,7 +47,7 @@ private:
 
     unsigned int gerneratePrefilterMap();
 
-    void cubeRender();
+    void initCubeRender();
 
 public:
     
@@ -63,6 +63,8 @@ public:
     unsigned int IblFrameBufferId_;
     unsigned int IblRenderBufferId_;
     std::shared_ptr<shader> cubeRenderShader_;
+    unsigned int VAO_;
+    unsigned int VBO_;
 };
 
 }

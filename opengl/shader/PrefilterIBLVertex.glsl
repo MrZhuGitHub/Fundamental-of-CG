@@ -11,4 +11,5 @@ out vec4 vertexPosition;
 void main()
 {
     vertexPosition = projectionMatrix * viewMatrix * modelMatrix * vec4(vPosition, 1.0);
+    gl_Position = vertexPosition;
 }
