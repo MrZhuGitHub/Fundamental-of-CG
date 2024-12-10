@@ -1,6 +1,6 @@
 #version 330 core
 out vec4 FragColor;
-in vec4 vertexPosition;
+in vec3 cubeMapCoord;
 
 uniform samplerCube environmentMap;
 uniform float roughness;
@@ -8,7 +8,7 @@ uniform float resolutionOfEnvironmentMap;
 
 const float PI = 3.14159265359;
 
-const uint SAMPLE_COUNT = 1024u;
+const uint SAMPLE_COUNT = 10000u;
 
 float RadicalInverse_VdC(uint bits)
 {
@@ -71,13 +71,12 @@ float SampleMipmap(float HdotV, float NdotH, float roughness)
 
 void main()
 {      
-    vec3 localPos = vertexPosition.xyz;
+    vec3 localPos = cubeMapCoord;
 
     vec3 N = normalize(localPos);    
     vec3 R = N;
     vec3 V = R;
 
-    
     float totalWeight = 0.0;   
     vec3 prefilteredColor = vec3(0.0);     
     for(uint i = 0u; i < SAMPLE_COUNT; ++i)
@@ -99,4 +98,6 @@ void main()
     prefilteredColor = prefilteredColor / totalWeight;
 
     FragColor = vec4(prefilteredColor, 1.0);
+
+    // FragColor = texture(environmentMap, cubeMapCoord);
 }  

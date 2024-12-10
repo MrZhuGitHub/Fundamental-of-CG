@@ -6,10 +6,11 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
-out vec4 vertexPosition;
+out vec3 cubeMapCoord;
 
 void main()
 {
-    vertexPosition = projectionMatrix * viewMatrix * modelMatrix * vec4(vPosition, 1.0);
-    gl_Position = vertexPosition;
+
+    cubeMapCoord = vPosition;
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(vPosition, 1.0);
 }

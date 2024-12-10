@@ -568,6 +568,7 @@ int preComputePrefilterEnvironmentMap() {
         // input
         processInput(window);
         prefilterEnvironmentMap->preComputerEnvironmentLight(window);
+        break;
         glfwPollEvents();
     }
 

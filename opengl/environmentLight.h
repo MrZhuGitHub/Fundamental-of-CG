@@ -59,6 +59,7 @@ public:
     using viewMatrix = glm::mat4;
     std::map<CubeTextureId, viewMatrix> cameraViewMats_;
     std::map<CubeTextureId, cubemapDirection> cubemapDirections_;
+    std::map<CubeTextureId, std::string> prifilterCubeMapSavePath_; 
     glm::mat4 projectMatrix_;
     unsigned int IblFrameBufferId_;
     unsigned int IblRenderBufferId_;

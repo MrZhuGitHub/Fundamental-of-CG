@@ -18,13 +18,13 @@ EnvironmentLight::EnvironmentLight(std::map<CubeTextureId, imageFilePath> IBLs, 
     , iblResolutionWidth_(width)
     , iblResolutionHeight_(height) {
 
-    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_DOWN,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 1.0, 0.0))));
-    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_UP,    glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 0.0))));
-    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_FRONT, glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, 1.0, 0.0))));
-    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_BACK,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0))));
-    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_LEFT,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0))));
-    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_RIGHT, glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0))));
-    projectMatrix_ = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1.0f);
+    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_DOWN,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0))));
+    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_UP,    glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0))));
+    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_FRONT, glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0))));
+    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_BACK,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0))));
+    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_LEFT,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))));
+    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_RIGHT, glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))));
+    projectMatrix_ = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 
     cubemapDirections_.insert(std::make_pair(CUBE_TEXTURE_DOWN,  GL_TEXTURE_CUBE_MAP_NEGATIVE_Y));
     cubemapDirections_.insert(std::make_pair(CUBE_TEXTURE_UP,    GL_TEXTURE_CUBE_MAP_POSITIVE_Y));
@@ -32,6 +32,13 @@ EnvironmentLight::EnvironmentLight(std::map<CubeTextureId, imageFilePath> IBLs, 
     cubemapDirections_.insert(std::make_pair(CUBE_TEXTURE_BACK,  GL_TEXTURE_CUBE_MAP_POSITIVE_Z));
     cubemapDirections_.insert(std::make_pair(CUBE_TEXTURE_LEFT,  GL_TEXTURE_CUBE_MAP_NEGATIVE_X));
     cubemapDirections_.insert(std::make_pair(CUBE_TEXTURE_RIGHT, GL_TEXTURE_CUBE_MAP_POSITIVE_X));
+
+    prifilterCubeMapSavePath_.insert(std::make_pair(CUBE_TEXTURE_DOWN,  "down.png"));
+    prifilterCubeMapSavePath_.insert(std::make_pair(CUBE_TEXTURE_UP,    "up.png"));
+    prifilterCubeMapSavePath_.insert(std::make_pair(CUBE_TEXTURE_FRONT, "front.png"));
+    prifilterCubeMapSavePath_.insert(std::make_pair(CUBE_TEXTURE_BACK,  "back.png"));
+    prifilterCubeMapSavePath_.insert(std::make_pair(CUBE_TEXTURE_LEFT,  "left.png"));
+    prifilterCubeMapSavePath_.insert(std::make_pair(CUBE_TEXTURE_RIGHT, "right.png"));
 
     cubeTexture_ = gernerateCubeTexture();
     IblMipmapTexture_ = gerneratePrefilterMap();
@@ -85,24 +92,33 @@ bool EnvironmentLight::preComputerEnvironmentLight(GLFWwindow* window) {
 
             glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
+            glDisable(GL_DEPTH_TEST);
+
             glBindVertexArray(VAO_);
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
 
             glBindVertexArray(0);
 
-            //todo: render to screen
+            //write to file
+            char* data = new char[resolutionWidth * resolutionHeight * 4];
+            memset(data, (resolutionWidth * resolutionHeight * 4), 0);
+            glReadPixels(0, 0, resolutionWidth, resolutionHeight, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            std::string image;
+            image.append(std::to_string(mipmapLevel)).append("_").append(prifilterCubeMapSavePath_.at(view.first));
+            int ret = stbi_write_png(image.c_str(), resolutionWidth, resolutionHeight, 4, data, 0);
+            delete data;
 
+            //render to screen
             glBindFramebuffer(GL_READ_FRAMEBUFFER, IblFrameBufferId_);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
             glBlitFramebuffer(0, 0, resolutionWidth, resolutionHeight, 0, 0, resolutionWidth, resolutionHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
             //swap frame buffer
             glfwSwapBuffers(window);
-            
-            std::this_thread::sleep_for(std::chrono::seconds(3));
         }
     }
+
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
