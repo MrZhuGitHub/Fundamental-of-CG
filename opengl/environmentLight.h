@@ -41,6 +41,10 @@ public:
 
     unsigned int getPreComputerResult();
 
+    void createRenderEnvironmentShader();
+
+    void renderEnvironment(glm::mat4 view, unsigned int width, unsigned int height);
+
 private:
 
     unsigned int gernerateCubeTexture();
@@ -66,6 +70,8 @@ public:
     std::shared_ptr<shader> cubeRenderShader_;
     unsigned int VAO_;
     unsigned int VBO_;
+
+    std::shared_ptr<shader> renderEnvironmentShader_;
 };
 
 }

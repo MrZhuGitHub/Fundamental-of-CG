@@ -100,6 +100,7 @@ bool EnvironmentLight::preComputerEnvironmentLight(GLFWwindow* window) {
 
             glBindVertexArray(0);
 
+            /*
             //write to file
             char* data = new char[resolutionWidth * resolutionHeight * 4];
             memset(data, (resolutionWidth * resolutionHeight * 4), 0);
@@ -116,6 +117,7 @@ bool EnvironmentLight::preComputerEnvironmentLight(GLFWwindow* window) {
 
             //swap frame buffer
             glfwSwapBuffers(window);
+            */
         }
     }
 
@@ -245,6 +247,46 @@ unsigned int EnvironmentLight::gerneratePrefilterMap() {
     
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     return textureID;
+}
+
+void EnvironmentLight::createRenderEnvironmentShader() {
+    renderEnvironmentShader_ = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/environmentCubeVertex.glsl",
+                                                        "/opengles/Fundamental-of-CG/opengl/shader/environmentCubeFragment.glsl");
+}
+
+void EnvironmentLight::renderEnvironment(glm::mat4 view, unsigned int width, unsigned int height) {
+    if (!renderEnvironmentShader_) {
+        return;
+    }
+
+    renderEnvironmentShader_->use();
+
+    glViewport(0, 0, width, height);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    cubeRenderShader_->setViewMatrix(view);
+
+    glm::mat4 projectMatrix = glm::perspective(glm::radians(90.0f), (float)width/(float)height, 0.1f, 10.0f);
+
+    cubeRenderShader_->setProjectionMatrix(projectMatrix);
+
+    cubeRenderShader_->setModelMatrix(glm::mat4(1.0f));
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, IblMipmapTexture_);
+
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+    glDisable(GL_DEPTH_TEST);
+
+    glBindVertexArray(VAO_);
+
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    glBindVertexArray(0);
+
+    glEnable(GL_DEPTH_TEST);
 }
 
 }

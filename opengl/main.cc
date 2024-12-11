@@ -440,6 +440,19 @@ int renderBasedOnGames202() {
     glm::mat4 lightCameraProjectMatrix = glm::ortho(-100.0f,100.0f, -100.0f, 100.0f, 20.0f, 220.0f);
     glm::vec3 lightCameraPosition = lightCamera->getCameraPosition();
 
+    //environment light
+    std::map<CubeTextureId, imageFilePath> IBLs = {
+        {CUBE_TEXTURE_DOWN,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/down.jpg"},
+        {CUBE_TEXTURE_UP,    "/opengles/Fundamental-of-CG/opengl/ibl/sky/up.jpg"},
+        {CUBE_TEXTURE_FRONT, "/opengles/Fundamental-of-CG/opengl/ibl/sky/front.jpg"},
+        {CUBE_TEXTURE_BACK,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/back.jpg"},
+        {CUBE_TEXTURE_LEFT,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/left.jpg"},
+        {CUBE_TEXTURE_RIGHT, "/opengles/Fundamental-of-CG/opengl/ibl/sky/right.jpg"},      
+    };
+    std::shared_ptr<EnvironmentLight> prefilterEnvironmentMap = std::make_shared<EnvironmentLight>(IBLs, 512, 512);
+    prefilterEnvironmentMap->preComputerEnvironmentLight(window);
+    prefilterEnvironmentMap->createRenderEnvironmentShader();
+
     while (!glfwWindowShouldClose(window))
     {
         // input
@@ -475,10 +488,14 @@ int renderBasedOnGames202() {
         }
 
         {
-            //render
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+            //render environment
+            if (prefilterEnvironmentMap) {
+                prefilterEnvironmentMap->renderEnvironment(glm::mat4(glm::mat3(kCamera->getViewMatrix())), SCR_WIDTH, SCR_HEIGHT);
+            } else {
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+            }
 
             //draw model
             kModelShader->use();
@@ -578,8 +595,8 @@ int preComputePrefilterEnvironmentMap() {
 
 int main() {
     //renderBev();
-    //renderBasedOnGames202();
+    renderBasedOnGames202();
     //PreComputeMicrofacetBrdf();
-    preComputePrefilterEnvironmentMap();
+    //preComputePrefilterEnvironmentMap();
     return 0;
 }
