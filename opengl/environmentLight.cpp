@@ -20,8 +20,8 @@ EnvironmentLight::EnvironmentLight(std::map<CubeTextureId, imageFilePath> IBLs, 
 
     cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_DOWN,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0))));
     cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_UP,    glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0))));
-    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_FRONT, glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0))));
-    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_BACK,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0))));
+    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_FRONT, glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0))));
+    cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_BACK,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0))));
     cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_LEFT,  glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))));
     cameraViewMats_.insert(std::make_pair(CUBE_TEXTURE_RIGHT, glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))));
     projectMatrix_ = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);

@@ -121,7 +121,9 @@ void main()
 
             shadowPercentage = shadowPercentage/121.0;
 
-            vec3 color = fragmentColor.xyz * shadowPercentage;
+            vec3 color = fragmentColor.xyz * shadowPercentage * 0.5 + fragmentColor.xyz * 0.5;
+
+            fragmentColor = vec4(color, 1.0);
 
             //vec3 color = shadow + shadowPercentage*diffuse + shadowPercentage*phong;
             
