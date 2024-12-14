@@ -14,10 +14,9 @@
 #include "curve.h"
 #include "text.h"
 #include "framebuffer.h"
+#include "texture.h"
 
 #include "glm/gtx/string_cast.hpp"
-
-
 
 using namespace CG;
 
@@ -403,8 +402,8 @@ int renderBasedOnGames202() {
     glEnable(GL_DEPTH_TEST);
 
     //load shader
-    kModelShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongVertex.glsl",
-                                    "/opengles/Fundamental-of-CG/opengl/shader/BlinnPhongFragment.glsl");
+    kModelShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/pbrVertex.glsl",
+                                    "/opengles/Fundamental-of-CG/opengl/shader/pbrFragment.glsl");
 
     //load model
     std::vector<std::shared_ptr<model>> models;
@@ -452,6 +451,19 @@ int renderBasedOnGames202() {
     std::shared_ptr<EnvironmentLight> prefilterEnvironmentMap = std::make_shared<EnvironmentLight>(IBLs, 512, 512);
     prefilterEnvironmentMap->preComputerEnvironmentLight(window);
     prefilterEnvironmentMap->createRenderEnvironmentShader();
+
+    //load texture
+    std::shared_ptr<textureLoader> EavgPreComputeTexture = std::make_shared<textureLoader>();
+    if (!EavgPreComputeTexture->set2Dtexture("/opengles/Fundamental-of-CG/opengl/pbr/EavgImage.png", false)) {
+        std::cout << "failed to load EavgPreComputeTexture" << std::endl;
+        return -1;
+    }
+    
+    std::shared_ptr<textureLoader> BrdfPreComputeTexture = std::make_shared<textureLoader>();
+    if (!BrdfPreComputeTexture->set2Dtexture("/opengles/Fundamental-of-CG/opengl/pbr/MicroModelBrdfImage.png", false)) {
+        std::cout << "failed to load BrdfPreComputeTexture" << std::endl;
+        return -1;
+    }
 
     while (!glfwWindowShouldClose(window))
     {
@@ -514,9 +526,32 @@ int renderBasedOnGames202() {
             kModelShader->setInt("shadowTexture", shadowFramebuffer->getTexture());
             glBindTexture(GL_TEXTURE_2D, shadowFramebuffer->getTexture());
 
-            for (auto& model : models) {
-                model->drawModel(kModelShader);
-            }
+            //configure brdf map
+            glActiveTexture(GL_TEXTURE0 + EavgPreComputeTexture->getTextureId());
+            kModelShader->setInt("EavgTexture", EavgPreComputeTexture->getTextureId());
+            glBindTexture(GL_TEXTURE_2D, EavgPreComputeTexture->getTextureId());
+
+            glActiveTexture(GL_TEXTURE0 + BrdfPreComputeTexture->getTextureId());
+            kModelShader->setInt("MicroModelBrdfTexture", BrdfPreComputeTexture->getTextureId());
+            glBindTexture(GL_TEXTURE_2D, BrdfPreComputeTexture->getTextureId());    
+
+            glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterEnvironmentMap->getPreComputerResult()); 
+            glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+            kModelShader->setFloat("maxMipmapLevel", 5.0);    
+
+            // for (auto& model : models) {
+            //     model->drawModel(kModelShader);
+            // }
+
+            //kModelShader->setProperty(glm::vec3(65.0/255.0, 105.0/255.0, 225.0/255.0), "modelColor");
+            kModelShader->setProperty(glm::vec3(1.0, 1.0, 1.0), "modelColor");
+            kModelShader->setFloat("roughness", 0.4);
+            models[0]->drawModel(kModelShader);
+
+            kModelShader->setProperty(glm::vec3(1.0, 1.0, 1.0), "modelColor");
+            kModelShader->setFloat("roughness", 0.5);
+            models[1]->drawModel(kModelShader);
 
             // kModelShader->setBool("shadow_enable", false);
             // models[0]->drawModel(kModelShader);
@@ -591,6 +626,8 @@ int preComputePrefilterEnvironmentMap() {
 
     // optional: de-allocate all resources
     glfwTerminate();
+
+    return 0;
 }
 
 int main() {
