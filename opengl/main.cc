@@ -20,10 +20,10 @@
 
 using namespace CG;
 
-#define SCR_WIDTH 2000.0
-#define SCR_HEIGHT 1200.0
+#define SCR_WIDTH 2048.0
+#define SCR_HEIGHT 1024.0
 
-std::shared_ptr<shader> kShader, kLineShader, kModelShader, kTextShader;
+std::shared_ptr<shader> kShader, kLineShader, kModelShader, kTextShader, kGBufferShader, kIndirectLightShader;
 std::shared_ptr<camera> kCamera;
 float kReleaseMouseX = 0.0f, kReleaseMouseY = 0.0f;
 float kPushMouseX = 0.0f, kPushMouseY = 0.0f;
@@ -405,6 +405,12 @@ int renderBasedOnGames202() {
     kModelShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/pbrVertex.glsl",
                                     "/opengles/Fundamental-of-CG/opengl/shader/pbrFragment.glsl");
 
+    kGBufferShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/GbufferVertex.glsl",
+                                       "/opengles/Fundamental-of-CG/opengl/shader/GbufferFragment.glsl");
+
+    // kIndirectLightShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/SsrIndirectShadingVertex.glsl",
+    //                                     "/opengles/Fundamental-of-CG/opengl/shader/SsrIndirectShadingFragment.glsl");
+
     //load model
     std::vector<std::shared_ptr<model>> models;
     auto car = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/911/911.obj");
@@ -440,36 +446,49 @@ int renderBasedOnGames202() {
     glm::vec3 lightCameraPosition = lightCamera->getCameraPosition();
 
     //environment light
-    std::map<CubeTextureId, imageFilePath> IBLs = {
-        {CUBE_TEXTURE_DOWN,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/down.jpg"},
-        {CUBE_TEXTURE_UP,    "/opengles/Fundamental-of-CG/opengl/ibl/sky/up.jpg"},
-        {CUBE_TEXTURE_FRONT, "/opengles/Fundamental-of-CG/opengl/ibl/sky/front.jpg"},
-        {CUBE_TEXTURE_BACK,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/back.jpg"},
-        {CUBE_TEXTURE_LEFT,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/left.jpg"},
-        {CUBE_TEXTURE_RIGHT, "/opengles/Fundamental-of-CG/opengl/ibl/sky/right.jpg"},      
-    };
-    std::shared_ptr<EnvironmentLight> prefilterEnvironmentMap = std::make_shared<EnvironmentLight>(IBLs, 512, 512);
-    prefilterEnvironmentMap->preComputerEnvironmentLight(window);
-    prefilterEnvironmentMap->createRenderEnvironmentShader();
+    // std::map<CubeTextureId, imageFilePath> IBLs = {
+    //     {CUBE_TEXTURE_DOWN,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/down.jpg"},
+    //     {CUBE_TEXTURE_UP,    "/opengles/Fundamental-of-CG/opengl/ibl/sky/up.jpg"},
+    //     {CUBE_TEXTURE_FRONT, "/opengles/Fundamental-of-CG/opengl/ibl/sky/front.jpg"},
+    //     {CUBE_TEXTURE_BACK,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/back.jpg"},
+    //     {CUBE_TEXTURE_LEFT,  "/opengles/Fundamental-of-CG/opengl/ibl/sky/left.jpg"},
+    //     {CUBE_TEXTURE_RIGHT, "/opengles/Fundamental-of-CG/opengl/ibl/sky/right.jpg"},      
+    // };
+    // std::shared_ptr<EnvironmentLight> prefilterEnvironmentMap = std::make_shared<EnvironmentLight>(IBLs, 512, 512);
+    // prefilterEnvironmentMap->preComputerEnvironmentLight(window);
+    // prefilterEnvironmentMap->createRenderEnvironmentShader();
 
     //load texture
-    std::shared_ptr<textureLoader> EavgPreComputeTexture = std::make_shared<textureLoader>();
-    if (!EavgPreComputeTexture->set2Dtexture("/opengles/Fundamental-of-CG/opengl/pbr/EavgImage.png", false)) {
-        std::cout << "failed to load EavgPreComputeTexture" << std::endl;
-        return -1;
-    }
+    // std::shared_ptr<textureLoader> EavgPreComputeTexture = std::make_shared<textureLoader>();
+    // if (!EavgPreComputeTexture->set2Dtexture("/opengles/Fundamental-of-CG/opengl/pbr/EavgImage.png", false)) {
+    //     std::cout << "failed to load EavgPreComputeTexture" << std::endl;
+    //     return -1;
+    // }
     
-    std::shared_ptr<textureLoader> BrdfPreComputeTexture = std::make_shared<textureLoader>();
-    if (!BrdfPreComputeTexture->set2Dtexture("/opengles/Fundamental-of-CG/opengl/pbr/MicroModelBrdfImage.png", false)) {
-        std::cout << "failed to load BrdfPreComputeTexture" << std::endl;
-        return -1;
-    }
+    // std::shared_ptr<textureLoader> BrdfPreComputeTexture = std::make_shared<textureLoader>();
+    // if (!BrdfPreComputeTexture->set2Dtexture("/opengles/Fundamental-of-CG/opengl/pbr/MicroModelBrdfImage.png", false)) {
+    //     std::cout << "failed to load BrdfPreComputeTexture" << std::endl;
+    //     return -1;
+    // }
+
+    //GBuffer
+    std::shared_ptr<frameBuffer> geometryBuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT);
+    geometryBuffer->init();
+
+    //direct shading framebuffer
+    // std::shared_ptr<frameBuffer> directShadingFramebuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT);
+    // directShadingFramebuffer->init();
+
+    //indirect shading framebuffer
+    // std::shared_ptr<frameBuffer> indirectShadingFramebuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT);
+    // indirectShadingFramebuffer->init();
 
     while (!glfwWindowShouldClose(window))
     {
         // input
         processInput(window);
 
+        /*
         {
             //shadow map
             shadowFramebuffer->setup();
@@ -498,8 +517,30 @@ int renderBasedOnGames202() {
 
             shadowFramebuffer->unload();
         }
+        */
 
         {
+            geometryBuffer->setup();
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+            kGBufferShader->use();
+            kGBufferShader->setModelMatrix(defaultModelMatrix);
+            kGBufferShader->setViewMatrix(kCamera->getViewMatrix());
+            kGBufferShader->setProjectionMatrix(kCamera->getProjectMatrix());
+
+            for (auto& model : models) {
+                model->drawModel(kGBufferShader);
+            }
+
+            geometryBuffer->unload();
+            geometryBuffer->blitToFrameBuffer(0);
+        }
+
+        /*
+        {
+            directShadingFramebuffer->setup();
             //render environment
             if (prefilterEnvironmentMap) {
                 prefilterEnvironmentMap->renderEnvironment(glm::mat4(glm::mat3(kCamera->getViewMatrix())), SCR_WIDTH, SCR_HEIGHT);
@@ -540,11 +581,6 @@ int renderBasedOnGames202() {
 
             kModelShader->setFloat("maxMipmapLevel", 5.0);    
 
-            // for (auto& model : models) {
-            //     model->drawModel(kModelShader);
-            // }
-
-            //kModelShader->setProperty(glm::vec3(65.0/255.0, 105.0/255.0, 225.0/255.0), "modelColor");
             kModelShader->setProperty(glm::vec3(0.1, 0.1, 0.1), "modelColor");
             kModelShader->setFloat("roughness", 0.1);
             models[0]->drawModel(kModelShader);
@@ -552,12 +588,14 @@ int renderBasedOnGames202() {
             kModelShader->setProperty(glm::vec3(1.0, 1.0, 1.0), "modelColor");
             kModelShader->setFloat("roughness", 0.3);
             models[1]->drawModel(kModelShader);
-
-            // kModelShader->setBool("shadow_enable", false);
-            // models[0]->drawModel(kModelShader);
-            // kModelShader->setBool("shadow_enable", true);
-            // models[1]->drawModel(kModelShader);
+            directShadingFramebuffer->unload();
         }
+
+        {
+            indirectShadingFramebuffer->setup();
+            indirectShadingFramebuffer->unload();
+        }
+        */
 
         //swap frame buffer
         glfwSwapBuffers(window);
