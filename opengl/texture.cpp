@@ -59,7 +59,7 @@ bool textureLoader::set2Dtexture(std::string image, bool mipmap) {
 }
 
 bool textureLoader::set3Dtexture(std::map<CubeTextureId, std::string> images, bool mipmap) {
-
+    return false;
 }
 
 unsigned int textureLoader::getTextureId() {
