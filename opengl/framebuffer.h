@@ -38,6 +38,8 @@ public:
 
     bool readPixels(unsigned int x, unsigned int y, float* pixels);
 
+    bool readPixels(unsigned int x, unsigned int y, unsigned int width, unsigned int height, float* pixels);
+
 private:
     unsigned int textureId_;
     unsigned int frameBufferId_;

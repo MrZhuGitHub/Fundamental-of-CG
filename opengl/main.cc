@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <fstream>
 
 #include "model.h"
 #include "shader.h"
@@ -20,14 +21,15 @@
 
 using namespace CG;
 
-#define SCR_WIDTH 2048.0
-#define SCR_HEIGHT 1024.0
+#define SCR_WIDTH 2000
+#define SCR_HEIGHT 1200
 
 std::shared_ptr<shader> kShader, kLineShader, kModelShader, kTextShader, kGBufferShader, kIndirectLightShader;
 std::shared_ptr<camera> kCamera;
 float kReleaseMouseX = 0.0f, kReleaseMouseY = 0.0f;
 float kPushMouseX = 0.0f, kPushMouseY = 0.0f;
 bool kIfMouseRelease = true;
+double mousePosX, mousePosY;
 
 void processInput(GLFWwindow *window)
 {
@@ -52,6 +54,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {    
+    mousePosX = xpos;
+    mousePosY = ypos;
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         kPushMouseX = xpos;
         kPushMouseY = ypos;
@@ -411,6 +415,9 @@ int renderBasedOnGames202() {
     kIndirectLightShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/SsrIndirectShadingVertex.glsl",
                                         "/opengles/Fundamental-of-CG/opengl/shader/SsrIndirectShadingFragment.glsl");
 
+    kTextShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/textVertex.glsl",
+                                       "/opengles/Fundamental-of-CG/opengl/shader/textFragment.glsl");
+
     //load model
     std::vector<std::shared_ptr<model>> models;
     auto car = std::make_shared<model>("/opengles/Fundamental-of-CG/opengl/model/911/911.obj");
@@ -483,6 +490,10 @@ int renderBasedOnGames202() {
     std::shared_ptr<frameBuffer> indirectShadingFramebuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT);
     indirectShadingFramebuffer->init();
 
+    //text
+    std::shared_ptr<text> textObject = std::make_shared<text>(kTextShader, SCR_WIDTH, SCR_HEIGHT);
+    textObject->loadCharacters("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf");
+
     while (!glfwWindowShouldClose(window))
     {
         // input
@@ -530,8 +541,6 @@ int renderBasedOnGames202() {
             for (auto& model : models) {
                 model->drawModel(kModelShader);
             }
-
-            //shadowFramebuffer->blitToFrameBuffer(0);
 
             shadowFramebuffer->unload();
         }
@@ -583,7 +592,7 @@ int renderBasedOnGames202() {
             models[0]->drawModel(kModelShader);
 
             kModelShader->setProperty(glm::vec3(1.0, 1.0, 1.0), "modelColor");
-            kModelShader->setFloat("roughness", 0.3);
+            kModelShader->setFloat("roughness", 0.0);
             models[1]->drawModel(kModelShader);
 
             directShadingFramebuffer->unload();
@@ -608,7 +617,7 @@ int renderBasedOnGames202() {
 
             //load GBuffer texture
             glActiveTexture(GL_TEXTURE0 + geometryBuffer->getTexture());
-            kIndirectLightShader->setInt("depthSampler2D", geometryBuffer->getTexture());
+            kIndirectLightShader->setInt("GBufferSampler2D", geometryBuffer->getTexture());
             glBindTexture(GL_TEXTURE_2D, geometryBuffer->getTexture());
 
             //load directLight texture
@@ -616,20 +625,33 @@ int renderBasedOnGames202() {
             kIndirectLightShader->setInt("directShadingSampler2D", directShadingFramebuffer->getTexture());
             glBindTexture(GL_TEXTURE_2D, directShadingFramebuffer->getTexture());
 
-            kIndirectLightShader->setProperty((kCamera->getProjectMatrix()*kCamera->getProjectMatrix()), "world2screenMatrix");
+            kIndirectLightShader->setProperty((kCamera->getProjectMatrix()*kCamera->getViewMatrix()), "world2screenMatrix");
             kIndirectLightShader->setProperty(kCamera->getCameraPosition(), "cameraPosition");
             kIndirectLightShader->setProperty(glm::vec2(SCR_WIDTH, SCR_HEIGHT), "screenResolution");
 
             kIndirectLightShader->setProperty(glm::vec3(0.1, 0.1, 0.1), "modelColor");
             kIndirectLightShader->setFloat("roughness", 0.1);
+            kIndirectLightShader->setBool("SSR", false);
             models[0]->drawModel(kIndirectLightShader);
 
             kIndirectLightShader->setProperty(glm::vec3(1.0, 1.0, 1.0), "modelColor");
-            kIndirectLightShader->setFloat("roughness", 0.3);
+            kIndirectLightShader->setFloat("roughness", 0.0);
+            kIndirectLightShader->setBool("SSR", true);
             models[1]->drawModel(kIndirectLightShader);
+
+            //draw text
+            textObject->renderText(std::string("X: ") + std::to_string(mousePosX), 10, SCR_HEIGHT - 50, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            textObject->renderText(std::string("Y: ") + std::to_string(SCR_HEIGHT - mousePosY), 10, SCR_HEIGHT - 100, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            float pixels[4];
+            indirectShadingFramebuffer->readPixels(mousePosX, SCR_HEIGHT - mousePosY, 1, 1, pixels);
+            textObject->renderText(std::string("R: ") + std::to_string(pixels[0]), 10, SCR_HEIGHT - 150, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            textObject->renderText(std::string("G: ") + std::to_string(pixels[1]), 10, SCR_HEIGHT - 200, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            textObject->renderText(std::string("B: ") + std::to_string(pixels[2]), 10, SCR_HEIGHT - 250, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            textObject->renderText(std::string("A: ") + std::to_string(pixels[3]), 10, SCR_HEIGHT - 300, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
 
             indirectShadingFramebuffer->unload();
             indirectShadingFramebuffer->blitToFrameBuffer(0);
+
         }
 
         //swap frame buffer

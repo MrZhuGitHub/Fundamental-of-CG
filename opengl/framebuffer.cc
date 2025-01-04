@@ -131,4 +131,15 @@ bool frameBuffer::readPixels(unsigned int x, unsigned int y, float* pixels) {
     return true;
 }
 
+bool frameBuffer::readPixels(unsigned int x, unsigned int y, unsigned int width, unsigned int height, float* pixels) {
+    if (!initSuccess_) {
+        return initSuccess_;
+    }
+
+    glReadPixels(x, y, width, height, GL_RGBA, GL_FLOAT, pixels);
+
+    return true;    
+}
+
+
 }

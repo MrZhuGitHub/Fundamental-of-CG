@@ -1,5 +1,5 @@
 #version 330 core
-out vec4 FragColor;
+out highp vec4 FragColor;
 
 in vec4 vertexPosition;
 
@@ -12,6 +12,8 @@ uniform mat4 world2screenMatrix;
 
 uniform sampler2D GBufferSampler2D;
 uniform sampler2D directShadingSampler2D;
+
+uniform bool SSR;
 
 const float PI = 3.14159265359;
 
@@ -110,22 +112,45 @@ float getDepth(float x, bool if_x, float y, bool if_y, vec3 origin, vec3 reflect
 
 vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction) 
 {
+    // float x =  2.0*screenCoord.x/screenResolution.x - 1.0;
+    // float depthOrigin = getDepth(x, true, 0, false, origin, reflect);
+    // vec2 st = screenCoord.xy/screenResolution;
+    // float localDepthOrigin = texture(GBufferSampler2D, st).w;
+    // if (depthOrigin > localDepthOrigin) {
+    //     return vec4(depthOrigin, localDepthOrigin, 1.0, 1.0);
+    // } else {
+    //     return vec4(depthOrigin, localDepthOrigin, 0.0, 1.0);
+    // }
+
+
     float ratio = (direction.y - screenCoord.y)/(direction.x - screenCoord.x);
     if (abs(ratio) <= 1) {
         float x_step = (direction.x - screenCoord.x)/abs(direction.x - screenCoord.x);
+        x_step = x_step * 1.0;
         float step_level = 1.0;
-        for (float x = screenCoord.x; (x > 0.0 && x < screenResolution.x); x = x + step_level*x_step) {
+
+        for (float x = screenCoord.x + step_level * x_step; (x > 0.0 && x < screenResolution.x); x = x + step_level*x_step) {
             float projectionCoord = 2.0*x/screenResolution.x - 1.0;
             float depth = getDepth(projectionCoord, true, 0, false, origin, reflect);
             vec2 st = vec2(x, screenCoord.y + ratio*(x - screenCoord.x))/screenResolution;
             float localDepth = texture(GBufferSampler2D, st).w;
-            if (depth > localDepth) {
+            if ((depth) > (localDepth)) {
                 if (step_level > 1.0) {
                     x = x - step_level*x_step;
                     step_level = step_level/2.0;
                 } else {
-                    vec4 intersection = vec4(x, (screenCoord.y + ratio*(x - screenCoord.x)), 0.0 ,1.0);
-                    return intersection;
+                    float previous = x - step_level*x_step;
+                    float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
+                    float previousDepth = getDepth(previousProjectionCoord, true, 0, false, origin, reflect);
+                    if ((previousDepth) < localDepth) {
+                        //vec4 intersection = vec4(1.0);
+                        //vec4 intersection = vec4((x - screenCoord.x)/screenResolution.x, ratio*(x - screenCoord.x)/screenResolution.y, depth ,localDepth);
+                        vec4 intersection = vec4(x, (screenCoord.y + ratio*(x - screenCoord.x)), 0.0 ,1.0);
+                        return intersection;
+                    } else {
+                        vec4 block = vec4(0.4);
+                        return block;
+                    }
                 }
             } else {
                 step_level = step_level * 2.0;
@@ -136,19 +161,32 @@ vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction
     } else {
         ratio = 1.0/ratio;
         float y_step = (direction.y - screenCoord.y)/abs(direction.y - screenCoord.y);
+        y_step = y_step * 1.0;
         float step_level = 1.0;
-        for (float y = screenCoord.y; (y > 0.0 && y < screenResolution.y); y = y + step_level*y_step) {
+
+        for (float y = screenCoord.y + step_level * y_step; (y > 0.0 && y < screenResolution.y); y = y + step_level*y_step) {
             float projectionCoord = 2.0*y/screenResolution.y - 1.0;
             float depth = getDepth(0, false, projectionCoord, true, origin, reflect);
             vec2 st = vec2(screenCoord.x + ratio*(y - screenCoord.y), y)/screenResolution;
             float localDepth = texture(GBufferSampler2D, st).w;
-            if (depth > localDepth) {
+            if ((depth) > (localDepth)) {
                 if (step_level > 1.0) {
                     y = y - step_level*y_step;
                     step_level = step_level/2.0;
                 } else {
-                    vec4 intersection = vec4((screenCoord.x + ratio*(y - screenCoord.y)), y, 0.0 ,1.0);
-                    return intersection;
+                    float previous = y - step_level*y_step;
+                    float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
+                    float previousDepth = getDepth(0, false, previousProjectionCoord, true, origin, reflect);
+                    if ((previousDepth) < localDepth) {
+                        //vec4 intersection = vec4(1.0);
+                        //vec4 intersection = vec4(ratio*(y - screenCoord.y)/screenResolution.x, (y - screenCoord.y)/screenResolution.y, depth ,localDepth);
+                        vec4 intersection = vec4((screenCoord.x + ratio*(y - screenCoord.y)), y, 0.0, 1.0);
+                        return intersection;
+                    } else {
+                        vec4 block = vec4(0.4);
+                        return block;
+                    }
+
                 }
             } else {
                 step_level = step_level * 2.0;
@@ -164,9 +202,15 @@ void main()
     vec3 V = normalize(cameraPosition - vertexPosition.xyz);
     vec2 st = gl_FragCoord.xy/screenResolution;
     vec3 N = texture(GBufferSampler2D, st).xyz;
+
     float localDepth = texture(GBufferSampler2D, st).w;
 
     vec3 directLightShading = texture(directShadingSampler2D, st).xyz;
+
+    if (!SSR) {
+        FragColor = vec4(directLightShading, 1.0);
+        return;
+    }
 
     vec3 globalLight = vec3(0.0);
     float sampleObject = 0;
@@ -185,22 +229,32 @@ void main()
         if(NdotL > 0.0)
         {
             vec3 reflectLightSecondPoint = vertexPosition.xyz + L;
-            vec2 screenCoord = vec2((world2screenMatrix * vec4(reflectLightSecondPoint, 1.0)).xy);
+            vec4 noNormalizationCoord = world2screenMatrix * vec4(reflectLightSecondPoint, 1.0);
+            noNormalizationCoord = noNormalizationCoord/noNormalizationCoord.w;
+            vec2 screenCoord = vec2(noNormalizationCoord.xy);
             screenCoord = (screenCoord + vec2(1.0))*0.5*screenResolution;
 
             vec4 result = getIndirctLight(vertexPosition.xyz, L, gl_FragCoord.xy, screenCoord);
+
+            // FragColor = result;
+            // return;
+
             if (result.w == 1.0) {
-                sampleObject = sampleObject + 1.0;
                 vec3 indirectLight = texture(directShadingSampler2D, result.xy/screenResolution).xyz;
-                indirectLight = indirectLight*BrdfDividePDF(V, N, L, roughness, modelColor);
+
+                // indirectLight = indirectLight*BrdfDividePDF(V, N, L, roughness, modelColor);
+
+                sampleObject = sampleObject + 1.0;
                 globalLight = globalLight + indirectLight;
             } else {
                 sampleEnvironment = sampleEnvironment + 1.0;
                 globalLight = globalLight + directLightShading;
             }
-        }        
+        }
     }
 
     globalLight = globalLight/(sampleObject + sampleEnvironment);
     FragColor = vec4(globalLight, 1.0);
+
+    // FragColor = vec4(0.6, 0.6, 0.6, 1.0);
 }
