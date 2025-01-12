@@ -142,11 +142,7 @@ vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction
             highp vec2 st = vec2(x, screenCoord.y + ratio*(x - screenCoord.x))/screenResolution;
             highp float localDepth = LinearizeDepth(texture(depthMapSampler2D, st).r);
 
-            // highp float previous = x - x_step;
-            // highp float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
-            // highp float previousDepth = getDepth(previousProjectionCoord, true, 0, false, origin, reflect);
-
-            highp float delta = 1.0;
+            highp float delta = 0.5;
 
             if (depth > localDepth) {
                 if (depth < 10.0 || depth > 1000.0 || depth > (localDepth + delta)) {
@@ -157,28 +153,6 @@ vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction
                 return intersection;
 
             }
-
-            // if ((depth) > (localDepth + 0.025)) {
-            //     if (step_level > 1.0) {
-            //         x = x - step_level*x_step;
-            //         step_level = step_level/2.0;
-            //     } else {
-            //         float previous = x - step_level*x_step;
-            //         float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
-            //         float previousDepth = getDepth(previousProjectionCoord, true, 0, false, origin, reflect);
-            //         if ((previousDepth) < localDepth && depth > -1.0 && depth < 1.0) {
-            //             //vec4 intersection = vec4(1.0);
-            //             //vec4 intersection = vec4((x - screenCoord.x)/10000.0, ratio*(x - screenCoord.x)/10000.0, abs(depth - depthOrigin), localDepthOrigin);
-            //             vec4 intersection = vec4(x, (screenCoord.y + ratio*(x - screenCoord.x)), delta ,1.0);
-            //             return intersection;
-            //         } else {
-            //             vec4 block = vec4(0.4);
-            //             return block;
-            //         }
-            //     }
-            // } else {
-            //     step_level = step_level * 2.0;
-            // }
         }
         vec4 outScreen = vec4(0.0);
         return outScreen;
@@ -193,11 +167,7 @@ vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction
             highp vec2 st = vec2(screenCoord.x + ratio*(y - screenCoord.y), y)/screenResolution;
             highp float localDepth = LinearizeDepth(texture(depthMapSampler2D, st).r);
 
-            // highp float previous = y - y_step;
-            // highp float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
-            // highp float previousDepth = getDepth(0, false, previousProjectionCoord, true, origin, reflect);
-
-            highp float delta = 1.0;
+            highp float delta = 0.5;
 
             if (depth > localDepth) {
 
@@ -209,30 +179,6 @@ vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction
                 return intersection;
 
             }
-
-            // if ((depth) > (localDepth + 0.025)) {
-            //     if (step_level > 1.0) {
-            //         y = y - step_level*y_step;
-            //         step_level = step_level/2.0;
-            //     } else {
-            //         float previous = y - step_level*y_step;
-            //         float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
-            //         float previousDepth = getDepth(0, false, previousProjectionCoord, true, origin, reflect);
-            //         if ((previousDepth) < localDepth) {
-            //             //vec4 intersection = vec4(1.0);
-            //             //vec4 intersection = vec4(ratio*(y - screenCoord.y)/10000.0f, (y - screenCoord.y)/10000.0f,  abs(depth - depthOrigin), localDepthOrigin);
-            //             vec4 intersection = vec4((screenCoord.x + ratio*(y - screenCoord.y)), y, delta, 1.0);
-            //             return intersection;
-            //         }
-            //         } else {
-            //             vec4 block = vec4(0.4);
-            //             return block;
-            //         }
-
-            //     }
-            // } else {
-            //     step_level = step_level * 2.0;
-            // }
         }
         vec4 outScreen = vec4(0.0);
         return outScreen;
@@ -296,7 +242,7 @@ void main()
     }
 
     globalLight = globalLight/(sampleObject + sampleEnvironment);
-    FragColor = vec4(globalLight, localDepth);
+    FragColor = 0.5*vec4(directLightShading, 1.0) + 0.5*vec4(globalLight, localDepth);
 
     // FragColor = vec4(0.6, 0.6, 0.6, 1.0);
 }
