@@ -224,9 +224,6 @@ void main()
 
             vec4 result = getIndirctLight(vertexPosition.xyz, L, gl_FragCoord.xy, screenCoord);
 
-            // FragColor = result;
-            // return;
-
             if (result.w == 1.0) {
                 vec3 indirectLight = texture(directShadingSampler2D, result.xy/screenResolution).xyz;
 
@@ -242,7 +239,6 @@ void main()
     }
 
     globalLight = globalLight/(sampleObject + sampleEnvironment);
-    FragColor = 0.5*vec4(directLightShading, 1.0) + 0.5*vec4(globalLight, localDepth);
 
-    // FragColor = vec4(0.6, 0.6, 0.6, 1.0);
+    FragColor = 0.3*vec4(directLightShading, 1.0) + 0.7*vec4(globalLight, localDepth);
 }
