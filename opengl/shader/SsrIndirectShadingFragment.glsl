@@ -1,4 +1,5 @@
 #version 330 core
+precision highp float;
 out highp vec4 FragColor;
 
 in vec4 vertexPosition;
@@ -8,9 +9,10 @@ uniform vec3 modelColor;
 uniform vec3 cameraPosition;
 uniform vec2 screenResolution;
 
-uniform mat4 world2screenMatrix;
+uniform highp mat4 world2screenMatrix;
 
-uniform sampler2D GBufferSampler2D;
+uniform sampler2D normalMapSampler2D;
+uniform sampler2D depthMapSampler2D;
 uniform sampler2D directShadingSampler2D;
 
 uniform bool SSR;
@@ -18,6 +20,16 @@ uniform bool SSR;
 const float PI = 3.14159265359;
 
 const uint SAMPLE_COUNT = 10u;
+
+in vec4 glPosition;
+
+float LinearizeDepth(float depth) 
+{
+    float near = 10.0;
+    float far = 1000.0;
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * near * far) / (far + near - z * (far - near));    
+}
 
 float RadicalInverse_VdC(uint bits)
 {
@@ -81,17 +93,17 @@ vec3 BrdfDividePDF(vec3 V, vec3 L, vec3 N, float roughness, vec3 fresnel)
     return BrdfDividePDF;
 }
 
-float getDepth(float x, bool if_x, float y, bool if_y, vec3 origin, vec3 reflect)
+highp float getDepth(highp float x, bool if_x, highp float y, bool if_y, highp vec3 origin, highp vec3 reflect)
 {
-    float t = 0.0;
+    highp float t = 0.0;
     reflect = normalize(reflect);
 
-    mat4 A = world2screenMatrix;
+    highp mat4 A = world2screenMatrix;
 
-    float w;
+    highp float w;
 
-    float w_a = A[0][3]*reflect[0] + A[1][3]*reflect[1] + A[2][3]*reflect[2];
-    float w_b = A[0][3]*origin[0] + A[1][3]*origin[1] + A[2][3]*origin[2] + A[3][3];
+    highp float w_a = A[0][3]*reflect[0] + A[1][3]*reflect[1] + A[2][3]*reflect[2];
+    highp float w_b = A[0][3]*origin[0] + A[1][3]*origin[1] + A[2][3]*origin[2] + A[3][3];
 
     if (if_x) {
         t = (w_b*x - (A[0][0]*origin[0] + A[1][0]*origin[1] + A[2][0]*origin[2] + A[3][0]))/(A[0][0]*reflect[0] + A[1][0]*reflect[1] + A[2][0]*reflect[2] - w_a*x);
@@ -103,94 +115,124 @@ float getDepth(float x, bool if_x, float y, bool if_y, vec3 origin, vec3 reflect
         w = w_a*t + w_b;
     }
 
-    float depth = t*(A[0][2]*reflect[0] + A[1][2]*reflect[1] + A[2][2]*reflect[2]) + (A[0][2]*origin[0] + A[1][2]*origin[1] + A[2][2]*origin[2] + A[3][2]);
+    highp float depth = t*(A[0][2]*reflect[0] + A[1][2]*reflect[1] + A[2][2]*reflect[2]) + (A[0][2]*origin[0] + A[1][2]*origin[1] + A[2][2]*origin[2] + A[3][2]);
 
     depth = depth/w;
 
-    return depth;
+    float near = 10.0;
+    float far = 1000.0;
+    return (2.0 * near * far) / (far + near - depth * (far - near)); 
 }
 
 vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction) 
 {
-    // float x =  2.0*screenCoord.x/screenResolution.x - 1.0;
-    // float depthOrigin = getDepth(x, true, 0, false, origin, reflect);
-    // vec2 st = screenCoord.xy/screenResolution;
-    // float localDepthOrigin = texture(GBufferSampler2D, st).w;
-    // if (depthOrigin > localDepthOrigin) {
-    //     return vec4(depthOrigin, localDepthOrigin, 1.0, 1.0);
-    // } else {
-    //     return vec4(depthOrigin, localDepthOrigin, 0.0, 1.0);
-    // }
+    float x =  2.0*screenCoord.x/screenResolution.x - 1.0;
+    float depthOrigin = getDepth(x, true, 0, false, origin, reflect);
+    vec2 st = screenCoord.xy/screenResolution;
+    float localDepthOrigin = glPosition.z/glPosition.w;;
 
-
-    float ratio = (direction.y - screenCoord.y)/(direction.x - screenCoord.x);
+    highp float ratio = (direction.y - screenCoord.y)/(direction.x - screenCoord.x);
     if (abs(ratio) <= 1) {
-        float x_step = (direction.x - screenCoord.x)/abs(direction.x - screenCoord.x);
-        x_step = x_step * 1.0;
+        highp float x_step = (direction.x - screenCoord.x)/abs(direction.x - screenCoord.x);
+        x_step = x_step;
         float step_level = 1.0;
+        for (float x = screenCoord.x + x_step; (x > 0.0 && x < screenResolution.x); x = x + step_level*x_step) {
+            highp float projectionCoord = 2.0*x/screenResolution.x - 1.0;
+            highp float depth = getDepth(projectionCoord, true, 0, false, origin, reflect);
+            highp vec2 st = vec2(x, screenCoord.y + ratio*(x - screenCoord.x))/screenResolution;
+            highp float localDepth = LinearizeDepth(texture(depthMapSampler2D, st).r);
 
-        for (float x = screenCoord.x + step_level * x_step; (x > 0.0 && x < screenResolution.x); x = x + step_level*x_step) {
-            float projectionCoord = 2.0*x/screenResolution.x - 1.0;
-            float depth = getDepth(projectionCoord, true, 0, false, origin, reflect);
-            vec2 st = vec2(x, screenCoord.y + ratio*(x - screenCoord.x))/screenResolution;
-            float localDepth = texture(GBufferSampler2D, st).w;
-            if ((depth) > (localDepth)) {
-                if (step_level > 1.0) {
-                    x = x - step_level*x_step;
-                    step_level = step_level/2.0;
-                } else {
-                    float previous = x - step_level*x_step;
-                    float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
-                    float previousDepth = getDepth(previousProjectionCoord, true, 0, false, origin, reflect);
-                    if ((previousDepth) < localDepth) {
-                        //vec4 intersection = vec4(1.0);
-                        //vec4 intersection = vec4((x - screenCoord.x)/screenResolution.x, ratio*(x - screenCoord.x)/screenResolution.y, depth ,localDepth);
-                        vec4 intersection = vec4(x, (screenCoord.y + ratio*(x - screenCoord.x)), 0.0 ,1.0);
-                        return intersection;
-                    } else {
-                        vec4 block = vec4(0.4);
-                        return block;
-                    }
+            // highp float previous = x - x_step;
+            // highp float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
+            // highp float previousDepth = getDepth(previousProjectionCoord, true, 0, false, origin, reflect);
+
+            highp float delta = 1.0;
+
+            if (depth > localDepth) {
+                if (depth < 10.0 || depth > 1000.0 || depth > (localDepth + delta)) {
+                    return vec4(0.0);
                 }
-            } else {
-                step_level = step_level * 2.0;
+
+                vec4 intersection = vec4(x, (screenCoord.y + ratio*(x - screenCoord.x)), 0.0 ,1.0);
+                return intersection;
+
             }
+
+            // if ((depth) > (localDepth + 0.025)) {
+            //     if (step_level > 1.0) {
+            //         x = x - step_level*x_step;
+            //         step_level = step_level/2.0;
+            //     } else {
+            //         float previous = x - step_level*x_step;
+            //         float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
+            //         float previousDepth = getDepth(previousProjectionCoord, true, 0, false, origin, reflect);
+            //         if ((previousDepth) < localDepth && depth > -1.0 && depth < 1.0) {
+            //             //vec4 intersection = vec4(1.0);
+            //             //vec4 intersection = vec4((x - screenCoord.x)/10000.0, ratio*(x - screenCoord.x)/10000.0, abs(depth - depthOrigin), localDepthOrigin);
+            //             vec4 intersection = vec4(x, (screenCoord.y + ratio*(x - screenCoord.x)), delta ,1.0);
+            //             return intersection;
+            //         } else {
+            //             vec4 block = vec4(0.4);
+            //             return block;
+            //         }
+            //     }
+            // } else {
+            //     step_level = step_level * 2.0;
+            // }
         }
         vec4 outScreen = vec4(0.0);
         return outScreen;
     } else {
         ratio = 1.0/ratio;
-        float y_step = (direction.y - screenCoord.y)/abs(direction.y - screenCoord.y);
-        y_step = y_step * 1.0;
+        highp float y_step = (direction.y - screenCoord.y)/abs(direction.y - screenCoord.y);
+        y_step = y_step;
         float step_level = 1.0;
+        for (float y = screenCoord.y + y_step; (y > 0.0 && y < screenResolution.y); y = y + step_level*y_step) {
+            highp float projectionCoord = 2.0*y/screenResolution.y - 1.0;
+            highp float depth = getDepth(0, false, projectionCoord, true, origin, reflect);
+            highp vec2 st = vec2(screenCoord.x + ratio*(y - screenCoord.y), y)/screenResolution;
+            highp float localDepth = LinearizeDepth(texture(depthMapSampler2D, st).r);
 
-        for (float y = screenCoord.y + step_level * y_step; (y > 0.0 && y < screenResolution.y); y = y + step_level*y_step) {
-            float projectionCoord = 2.0*y/screenResolution.y - 1.0;
-            float depth = getDepth(0, false, projectionCoord, true, origin, reflect);
-            vec2 st = vec2(screenCoord.x + ratio*(y - screenCoord.y), y)/screenResolution;
-            float localDepth = texture(GBufferSampler2D, st).w;
-            if ((depth) > (localDepth)) {
-                if (step_level > 1.0) {
-                    y = y - step_level*y_step;
-                    step_level = step_level/2.0;
-                } else {
-                    float previous = y - step_level*y_step;
-                    float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
-                    float previousDepth = getDepth(0, false, previousProjectionCoord, true, origin, reflect);
-                    if ((previousDepth) < localDepth) {
-                        //vec4 intersection = vec4(1.0);
-                        //vec4 intersection = vec4(ratio*(y - screenCoord.y)/screenResolution.x, (y - screenCoord.y)/screenResolution.y, depth ,localDepth);
-                        vec4 intersection = vec4((screenCoord.x + ratio*(y - screenCoord.y)), y, 0.0, 1.0);
-                        return intersection;
-                    } else {
-                        vec4 block = vec4(0.4);
-                        return block;
-                    }
+            // highp float previous = y - y_step;
+            // highp float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
+            // highp float previousDepth = getDepth(0, false, previousProjectionCoord, true, origin, reflect);
 
+            highp float delta = 1.0;
+
+            if (depth > localDepth) {
+
+                if (depth < 10.0 || depth > 1000.0 || depth > (localDepth + delta)) {
+                    return vec4(0.0);
                 }
-            } else {
-                step_level = step_level * 2.0;
+
+                vec4 intersection = vec4((screenCoord.x + ratio*(y - screenCoord.y)), y, 0.0, 1.0);
+                return intersection;
+
             }
+
+            // if ((depth) > (localDepth + 0.025)) {
+            //     if (step_level > 1.0) {
+            //         y = y - step_level*y_step;
+            //         step_level = step_level/2.0;
+            //     } else {
+            //         float previous = y - step_level*y_step;
+            //         float previousProjectionCoord = 2.0*previous/screenResolution.x - 1.0;
+            //         float previousDepth = getDepth(0, false, previousProjectionCoord, true, origin, reflect);
+            //         if ((previousDepth) < localDepth) {
+            //             //vec4 intersection = vec4(1.0);
+            //             //vec4 intersection = vec4(ratio*(y - screenCoord.y)/10000.0f, (y - screenCoord.y)/10000.0f,  abs(depth - depthOrigin), localDepthOrigin);
+            //             vec4 intersection = vec4((screenCoord.x + ratio*(y - screenCoord.y)), y, delta, 1.0);
+            //             return intersection;
+            //         }
+            //         } else {
+            //             vec4 block = vec4(0.4);
+            //             return block;
+            //         }
+
+            //     }
+            // } else {
+            //     step_level = step_level * 2.0;
+            // }
         }
         vec4 outScreen = vec4(0.0);
         return outScreen;
@@ -201,9 +243,9 @@ void main()
 {    
     vec3 V = normalize(cameraPosition - vertexPosition.xyz);
     vec2 st = gl_FragCoord.xy/screenResolution;
-    vec3 N = texture(GBufferSampler2D, st).xyz;
+    vec3 N = texture(normalMapSampler2D, st).xyz;
 
-    float localDepth = texture(GBufferSampler2D, st).w;
+    float localDepth = LinearizeDepth(texture(depthMapSampler2D, st).r);
 
     vec3 directLightShading = texture(directShadingSampler2D, st).xyz;
 
@@ -254,7 +296,7 @@ void main()
     }
 
     globalLight = globalLight/(sampleObject + sampleEnvironment);
-    FragColor = vec4(globalLight, 1.0);
+    FragColor = vec4(globalLight, localDepth);
 
     // FragColor = vec4(0.6, 0.6, 0.6, 1.0);
 }

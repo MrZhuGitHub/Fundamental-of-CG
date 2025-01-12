@@ -12,7 +12,7 @@ enum PIXEL{
 
 class frameBuffer {
 public:
-    frameBuffer(unsigned int width, unsigned int height, bool mass = false, unsigned int samples = 4);
+    frameBuffer(unsigned int width, unsigned int height, bool depthBuffer = false, bool mass = false, unsigned int samples = 4);
 
     ~frameBuffer();
 
@@ -36,12 +36,19 @@ public:
         return renderBufferId_;
     }
 
+    unsigned int getDepthBuffer() const {
+        return depthbufferTextureId_;
+    }
+
     bool readPixels(unsigned int x, unsigned int y, float* pixels);
 
     bool readPixels(unsigned int x, unsigned int y, unsigned int width, unsigned int height, float* pixels);
 
+    bool readDepth(unsigned int x, unsigned int y, unsigned int width, unsigned int height, float* depth);
+
 private:
     unsigned int textureId_;
+    unsigned int depthbufferTextureId_;
     unsigned int frameBufferId_;
     unsigned int renderBufferId_;
     unsigned int width_;
@@ -49,6 +56,7 @@ private:
     bool mass_;
     unsigned int samples_;
     bool initSuccess_;
+    bool depthBuffer_;
 };
 
 }

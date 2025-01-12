@@ -7,12 +7,13 @@
 
 namespace CG {
 
-frameBuffer::frameBuffer(unsigned int width, unsigned int height, bool mass, unsigned int samples)
+frameBuffer::frameBuffer(unsigned int width, unsigned int height, bool depthBuffer, bool mass, unsigned int samples)
     : width_(width)
     , height_(height)
     , mass_(mass)
     , samples_(samples)
-    , initSuccess_(false) {
+    , initSuccess_(false)
+    , depthBuffer_(depthBuffer) {
 
 }
 
@@ -46,23 +47,53 @@ bool frameBuffer::init() {
         }
     } else {
         glGenFramebuffers(1, &frameBufferId_);
-        glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId_);
+        
 
-        glGenTextures(1, &textureId_);
-        glBindTexture(GL_TEXTURE_2D, textureId_);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA, GL_FLOAT, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        if (depthBuffer_) {
+            glGenTextures(1, &textureId_);
+            glBindTexture(GL_TEXTURE_2D, textureId_);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, 0);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureId_, 0);  
+            glGenTextures(1, &depthbufferTextureId_);
+            glBindTexture(GL_TEXTURE_2D, depthbufferTextureId_);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width_, height_, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, 0);
 
-        glGenRenderbuffers(1, &renderBufferId_);
-        glBindRenderbuffer(GL_RENDERBUFFER, renderBufferId_); 
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width_, height_);  
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId_);
 
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferId_);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthbufferTextureId_, 0);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureId_, 0);
+
+            // glDrawBuffer(GL_NONE);
+            // glReadBuffer(GL_NONE);
+        }
+
+        if (!depthBuffer_) {
+
+            glGenTextures(1, &textureId_);
+            glBindTexture(GL_TEXTURE_2D, textureId_);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glGenRenderbuffers(1, &renderBufferId_);
+            glBindRenderbuffer(GL_RENDERBUFFER, renderBufferId_); 
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width_, height_);  
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId_);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureId_, 0);  
+
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferId_);
+        }
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -139,6 +170,16 @@ bool frameBuffer::readPixels(unsigned int x, unsigned int y, unsigned int width,
     glReadPixels(x, y, width, height, GL_RGBA, GL_FLOAT, pixels);
 
     return true;    
+}
+
+bool frameBuffer::readDepth(unsigned int x, unsigned int y, unsigned int width, unsigned int height, float* depth) {
+    if (!initSuccess_) {
+        return initSuccess_;
+    }
+
+    glReadPixels(x, y, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, depth);
+
+    return true;
 }
 
 

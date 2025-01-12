@@ -479,7 +479,7 @@ int renderBasedOnGames202() {
     }
 
     //GBuffer
-    std::shared_ptr<frameBuffer> geometryBuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT);
+    std::shared_ptr<frameBuffer> geometryBuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT, true);
     geometryBuffer->init();
 
     //direct shading framebuffer
@@ -503,7 +503,7 @@ int renderBasedOnGames202() {
             geometryBuffer->setup();
 
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
             kGBufferShader->use();
@@ -511,11 +511,34 @@ int renderBasedOnGames202() {
             kGBufferShader->setViewMatrix(kCamera->getViewMatrix());
             kGBufferShader->setProjectionMatrix(kCamera->getProjectMatrix());
 
-            for (auto& model : models) {
-                model->drawModel(kGBufferShader);
-            }
+            // for (auto& model : models) {
+            //     model->drawModel(kGBufferShader);
+            // }
+
+            kGBufferShader->setBool("enableDepth", true);
+
+            models[0]->drawModel(kGBufferShader);
+
+            kGBufferShader->setBool("enableDepth", false);
+
+            models[1]->drawModel(kGBufferShader);
+
+            // //draw text
+            // textObject->renderText(std::string("X: ") + std::to_string(mousePosX), 10, SCR_HEIGHT - 50, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // textObject->renderText(std::string("Y: ") + std::to_string(SCR_HEIGHT - mousePosY), 10, SCR_HEIGHT - 100, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // float pixels[4];
+            // geometryBuffer->readPixels(mousePosX, SCR_HEIGHT - mousePosY, 1, 1, pixels);
+            // textObject->renderText(std::string("R: ") + std::to_string(pixels[0]), 10, SCR_HEIGHT - 150, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // textObject->renderText(std::string("G: ") + std::to_string(pixels[1]), 10, SCR_HEIGHT - 200, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // textObject->renderText(std::string("B: ") + std::to_string(pixels[2]), 10, SCR_HEIGHT - 250, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // textObject->renderText(std::string("A: ") + std::to_string(pixels[3]), 10, SCR_HEIGHT - 300, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+
+            // float depth;
+            // geometryBuffer->readDepth(mousePosX, SCR_HEIGHT - mousePosY, 1, 1, &depth);
+            // textObject->renderText(std::string("DEPTH: ") + std::to_string(depth), 10, SCR_HEIGHT - 350, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
 
             geometryBuffer->unload();
+            // geometryBuffer->blitToFrameBuffer(0);
         }
 
         {
@@ -601,12 +624,12 @@ int renderBasedOnGames202() {
         {
             indirectShadingFramebuffer->setup();
 
-            //render environment
+            // render environment
             if (prefilterEnvironmentMap) {
                 prefilterEnvironmentMap->renderEnvironment(glm::mat4(glm::mat3(kCamera->getViewMatrix())), SCR_WIDTH, SCR_HEIGHT);
             } else {
                 glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
             }
 
@@ -617,8 +640,12 @@ int renderBasedOnGames202() {
 
             //load GBuffer texture
             glActiveTexture(GL_TEXTURE0 + geometryBuffer->getTexture());
-            kIndirectLightShader->setInt("GBufferSampler2D", geometryBuffer->getTexture());
+            kIndirectLightShader->setInt("normalMapSampler2D", geometryBuffer->getTexture());
             glBindTexture(GL_TEXTURE_2D, geometryBuffer->getTexture());
+
+            glActiveTexture(GL_TEXTURE0 + geometryBuffer->getDepthBuffer());
+            kIndirectLightShader->setInt("depthMapSampler2D", geometryBuffer->getDepthBuffer());
+            glBindTexture(GL_TEXTURE_2D, geometryBuffer->getDepthBuffer());
 
             //load directLight texture
             glActiveTexture(GL_TEXTURE0 + directShadingFramebuffer->getTexture());
