@@ -91,7 +91,7 @@ bool text::loadCharacters(std::string ttf) {
     return true;
 }
 
-void text::renderText(std::string text, float x, float y, float scale, glm::vec3 color) {
+void text::renderText(std::string text, float x, float y, float scale, glm::vec3 color = glm::vec3(1.0, 0.0, 0.0)) {
     textShader_->use();
 
     textShader_->setProperty(color, "textColor");

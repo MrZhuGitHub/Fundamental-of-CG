@@ -37,6 +37,8 @@ public:
 
     void setFloat(float property, std::string name);
 
+    void setProperty(glm::ivec2 property, std::string name);
+
     void setLight();
 
 private:
