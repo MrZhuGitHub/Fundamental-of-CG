@@ -140,7 +140,7 @@ vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction
             highp float projectionCoord = 2.0*x/screenResolution.x - 1.0;
             highp float depth = getDepth(projectionCoord, true, 0, false, origin, reflect);
             highp vec2 st = vec2(x, screenCoord.y + ratio*(x - screenCoord.x))/screenResolution;
-            highp float localDepth = LinearizeDepth(texture(depthMapSampler2D, st).r);
+            highp float localDepth = LinearizeDepth(textureLod(depthMapSampler2D, st, 0).r);
 
             highp float delta = 0.5;
 
@@ -165,7 +165,7 @@ vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction
             highp float projectionCoord = 2.0*y/screenResolution.y - 1.0;
             highp float depth = getDepth(0, false, projectionCoord, true, origin, reflect);
             highp vec2 st = vec2(screenCoord.x + ratio*(y - screenCoord.y), y)/screenResolution;
-            highp float localDepth = LinearizeDepth(texture(depthMapSampler2D, st).r);
+            highp float localDepth = LinearizeDepth(textureLod(depthMapSampler2D, st, 0).r);
 
             highp float delta = 0.5;
 
@@ -189,9 +189,9 @@ void main()
 {    
     vec3 V = normalize(cameraPosition - vertexPosition.xyz);
     vec2 st = gl_FragCoord.xy/screenResolution;
-    vec3 N = texture(normalMapSampler2D, st).xyz;
+    vec3 N = textureLod(normalMapSampler2D, st, 0).xyz;
 
-    float localDepth = LinearizeDepth(texture(depthMapSampler2D, st).r);
+    float localDepth = LinearizeDepth(textureLod(depthMapSampler2D, st, 0).r);
 
     vec3 directLightShading = texture(directShadingSampler2D, st).xyz;
 

@@ -489,10 +489,6 @@ int renderBasedOnGames202() {
     std::shared_ptr<frameBuffer> indirectShadingFramebuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT);
     indirectShadingFramebuffer->init();
 
-    //hierachicalDepth shading framebuffer
-    // std::shared_ptr<frameBuffer> hierachicalDepthFramebuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT, true);
-    // hierachicalDepthFramebuffer->init();
-
     std::shared_ptr<HierachicalDepthRender> hierachicalDepthRender = std::make_shared<HierachicalDepthRender>();
 
     //text
@@ -556,7 +552,7 @@ int renderBasedOnGames202() {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, geometryBuffer->getDepthBuffer());
 
-            for (int i = 1; i < 6; i++) {
+            for (int i = 1; i < numLevels; i++) {
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, geometryBuffer->getDepthBuffer(), i);
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, geometryBuffer->getTexture(), i); 
 
@@ -571,10 +567,10 @@ int renderBasedOnGames202() {
             }
 
             geometryBuffer->unload();
-            geometryBuffer->blitToFrameBuffer(0);
+            // geometryBuffer->blitToFrameBuffer(0);
         }
 
-        /*
+
         {
             //shadow map
             shadowFramebuffer->setup();
@@ -714,7 +710,6 @@ int renderBasedOnGames202() {
             indirectShadingFramebuffer->blitToFrameBuffer(0);
 
         }
-        */
 
         glfwSwapBuffers(window);
         glfwPollEvents();
