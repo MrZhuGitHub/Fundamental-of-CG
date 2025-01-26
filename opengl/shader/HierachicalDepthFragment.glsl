@@ -28,40 +28,42 @@ void main() {
 	float minDepth = min(min(depthTexelValues.x, depthTexelValues.y),
                          min(depthTexelValues.z, depthTexelValues.w));
 						 
-	// bool shouldIncludeExtraColumnFromPreviousLevel = ((u_previousLevelDimensions.x & 1) != 0);
-	// bool shouldIncludeExtraRowFromPreviousLevel = ((u_previousLevelDimensions.y & 1) != 0);
+	bool shouldIncludeExtraColumnFromPreviousLevel = ((u_previousLevelDimensions.x & 1) != 0);
+	bool shouldIncludeExtraRowFromPreviousLevel = ((u_previousLevelDimensions.y & 1) != 0);
 
-	// if (shouldIncludeExtraColumnFromPreviousLevel) {
-	// 	vec2 extraColumnTexelValues;
-	// 	extraColumnTexelValues.x = texelFetch(u_depthBuffer,
-    //                                           previousLevelBaseTexelCoord + ivec2(2, 0),
-    //                                           u_previousLevel).r;
-	// 	extraColumnTexelValues.y = texelFetch(u_depthBuffer,
-    //                                           previousLevelBaseTexelCoord + ivec2(2, 1),
-    //                                           u_previousLevel).r;
+	if (shouldIncludeExtraColumnFromPreviousLevel) {
+		vec2 extraColumnTexelValues;
+		extraColumnTexelValues.x = texelFetch(u_depthBuffer,
+                                              previousLevelBaseTexelCoord + ivec2(2, 0),
+                                              u_previousLevel).r;
+		extraColumnTexelValues.y = texelFetch(u_depthBuffer,
+                                              previousLevelBaseTexelCoord + ivec2(2, 1),
+                                              u_previousLevel).r;
 
 
-	// 	if (shouldIncludeExtraRowFromPreviousLevel) {
-	// 		float cornerTexelValue = texelFetch(u_depthBuffer,
-    //                                             previousLevelBaseTexelCoord + ivec2(2, 2),
-    //                                             u_previousLevel).r;
-	// 		minDepth = min(minDepth, cornerTexelValue);
-	// 	}
-	// 	minDepth = min(minDepth, min(extraColumnTexelValues.x, extraColumnTexelValues.y));
-	// }
+		if (shouldIncludeExtraRowFromPreviousLevel) {
+			float cornerTexelValue = texelFetch(u_depthBuffer,
+                                                previousLevelBaseTexelCoord + ivec2(2, 2),
+                                                u_previousLevel).r;
+			minDepth = min(minDepth, cornerTexelValue);
+		}
+		minDepth = min(minDepth, min(extraColumnTexelValues.x, extraColumnTexelValues.y));
+	}
 
-	// if (shouldIncludeExtraRowFromPreviousLevel) {
-	// 	vec2 extraRowTexelValues;
-	// 	extraRowTexelValues.x = texelFetch(u_depthBuffer,
-    //                                        previousLevelBaseTexelCoord + ivec2(0, 2),
-    //                                        u_previousLevel).r;
-	// 	extraRowTexelValues.y = texelFetch(u_depthBuffer,
-    //                                        previousLevelBaseTexelCoord + ivec2(1, 2),
-    //                                        u_previousLevel).r;
-	// 	minDepth = min(minDepth, min(extraRowTexelValues.x, extraRowTexelValues.y));
-	// }
+	if (shouldIncludeExtraRowFromPreviousLevel) {
+		vec2 extraRowTexelValues;
+		extraRowTexelValues.x = texelFetch(u_depthBuffer,
+                                           previousLevelBaseTexelCoord + ivec2(0, 2),
+                                           u_previousLevel).r;
+		extraRowTexelValues.y = texelFetch(u_depthBuffer,
+                                           previousLevelBaseTexelCoord + ivec2(1, 2),
+                                           u_previousLevel).r;
+		minDepth = min(minDepth, min(extraRowTexelValues.x, extraRowTexelValues.y));
+	}
 
     gl_FragDepth = minDepth;
 
-    FragColor = vec4(gl_FragDepth, gl_FragDepth, gl_FragDepth, 1.0);
+	float depth = 2*gl_FragDepth - 1.0;
+
+    FragColor = vec4(depth, depth, depth, 1.0);
 }

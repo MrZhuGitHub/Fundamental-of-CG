@@ -22,8 +22,8 @@
 
 using namespace CG;
 
-#define SCR_WIDTH 2000
-#define SCR_HEIGHT 1200
+#define SCR_WIDTH 2048
+#define SCR_HEIGHT 1024
 
 std::shared_ptr<shader> kShader, kLineShader, kModelShader, kTextShader, kGBufferShader, kIndirectLightShader, kHierachicalDepthShader;
 std::shared_ptr<camera> kCamera;
@@ -401,11 +401,6 @@ int renderBasedOnGames202() {
         return -1;
     }
 
-    //opengl
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(1, 1);
-    glEnable(GL_DEPTH_TEST);
-
     //load shader
     kModelShader = std::make_shared<shader>("/opengles/Fundamental-of-CG/opengl/shader/pbrVertex.glsl",
                                     "/opengles/Fundamental-of-CG/opengl/shader/pbrFragment.glsl");
@@ -495,14 +490,19 @@ int renderBasedOnGames202() {
     indirectShadingFramebuffer->init();
 
     //hierachicalDepth shading framebuffer
-    std::shared_ptr<frameBuffer> hierachicalDepthFramebuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT, true);
-    hierachicalDepthFramebuffer->init();
+    // std::shared_ptr<frameBuffer> hierachicalDepthFramebuffer = std::make_shared<frameBuffer>(SCR_WIDTH, SCR_HEIGHT, true);
+    // hierachicalDepthFramebuffer->init();
 
     std::shared_ptr<HierachicalDepthRender> hierachicalDepthRender = std::make_shared<HierachicalDepthRender>();
 
     //text
     std::shared_ptr<text> textObject = std::make_shared<text>(kTextShader, SCR_WIDTH, SCR_HEIGHT);
     textObject->loadCharacters("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf");
+
+    //opengl
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(1, 1);
+    glEnable(GL_DEPTH_TEST);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -511,6 +511,9 @@ int renderBasedOnGames202() {
 
         {
             geometryBuffer->setup();
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, geometryBuffer->getDepthBuffer(), 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, geometryBuffer->getTexture(), 0);
 
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -521,10 +524,6 @@ int renderBasedOnGames202() {
             kGBufferShader->setViewMatrix(kCamera->getViewMatrix());
             kGBufferShader->setProjectionMatrix(kCamera->getProjectMatrix());
 
-            // for (auto& model : models) {
-            //     model->drawModel(kGBufferShader);
-            // }
-
             kGBufferShader->setBool("enableDepth", true);
 
             models[0]->drawModel(kGBufferShader);
@@ -533,107 +532,47 @@ int renderBasedOnGames202() {
 
             models[1]->drawModel(kGBufferShader);
 
-            //draw text
-            textObject->renderText(std::string("X: ") + std::to_string(mousePosX), 10, SCR_HEIGHT - 50, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
-            textObject->renderText(std::string("Y: ") + std::to_string(SCR_HEIGHT - mousePosY), 10, SCR_HEIGHT - 100, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
-            float pixels[4];
-            geometryBuffer->readPixels(mousePosX, SCR_HEIGHT - mousePosY, 1, 1, pixels);
-            textObject->renderText(std::string("R: ") + std::to_string(pixels[0]), 10, SCR_HEIGHT - 150, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
-            textObject->renderText(std::string("G: ") + std::to_string(pixels[1]), 10, SCR_HEIGHT - 200, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
-            textObject->renderText(std::string("B: ") + std::to_string(pixels[2]), 10, SCR_HEIGHT - 250, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
-            textObject->renderText(std::string("A: ") + std::to_string(pixels[3]), 10, SCR_HEIGHT - 300, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
-            float depth;
-            geometryBuffer->readDepth(mousePosX, SCR_HEIGHT - mousePosY, 1, 1, &depth);
-            textObject->renderText(std::string("DEPTH: ") + std::to_string(depth), 10, SCR_HEIGHT - 350, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // //draw text
+            // textObject->renderText(std::string("X: ") + std::to_string(mousePosX), 10, SCR_HEIGHT - 50, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // textObject->renderText(std::string("Y: ") + std::to_string(SCR_HEIGHT - mousePosY), 10, SCR_HEIGHT - 100, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // float pixels[4];
+            // geometryBuffer->readPixels(mousePosX, SCR_HEIGHT - mousePosY, 1, 1, pixels);
+            // textObject->renderText(std::string("R: ") + std::to_string(pixels[0]), 10, SCR_HEIGHT - 150, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // textObject->renderText(std::string("G: ") + std::to_string(pixels[1]), 10, SCR_HEIGHT - 200, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // textObject->renderText(std::string("B: ") + std::to_string(pixels[2]), 10, SCR_HEIGHT - 250, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // textObject->renderText(std::string("A: ") + std::to_string(pixels[3]), 10, SCR_HEIGHT - 300, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+            // float depth;
+            // geometryBuffer->readDepth(mousePosX, SCR_HEIGHT - mousePosY, 1, 1, &depth);
+            // textObject->renderText(std::string("DEPTH: ") + std::to_string(depth), 10, SCR_HEIGHT - 350, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
+
+            glDepthFunc(GL_LESS);
+            glDepthMask(true);
+
+            int numLevels = 1 + (int)floorf(log2f(fminf(SCR_WIDTH, SCR_HEIGHT)));
+            int currentWidth = SCR_WIDTH;
+            int currentHeight = SCR_HEIGHT;
+
+            kHierachicalDepthShader->use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, geometryBuffer->getDepthBuffer());
+
+            for (int i = 1; i < 6; i++) {
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, geometryBuffer->getDepthBuffer(), i);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, geometryBuffer->getTexture(), i); 
+
+                kHierachicalDepthShader->setInt("u_previousLevel", (i - 1));
+                kHierachicalDepthShader->setProperty(glm::ivec2(currentWidth, currentHeight), "u_previousLevelDimensions"); 
+            
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glViewport(0, 0, currentWidth, currentHeight);
+
+                hierachicalDepthRender->render();
+            }
 
             geometryBuffer->unload();
             geometryBuffer->blitToFrameBuffer(0);
         }
-
-        // {
-        //     hierachicalDepthFramebuffer->setup();
-
-        //     int numLevels = 1 + (int)floorf(log2f(fminf(SCR_WIDTH, SCR_HEIGHT)));
-        //     int currentWidth = SCR_WIDTH;
-        //     int currentHeight = SCR_HEIGHT;
-
-        //     kHierachicalDepthShader->use();
-
-        //     glActiveTexture(GL_TEXTURE0);
-        //     glBindTexture(GL_TEXTURE_2D, geometryBuffer->getDepthBuffer());
-
-        //     // for (int i = 1; i < numLevels; i++) {
-
-        //     int i;
-
-        //     {
-        //         i = 1;
-
-        //         kHierachicalDepthShader->setInt("u_previousLevel", (i - 1));
-        //         kHierachicalDepthShader->setProperty(glm::ivec2(currentWidth, currentHeight), "u_previousLevelDimensions");
-
-        //         currentWidth = currentWidth/2;
-        //         currentHeight = currentHeight/2;
-
-        //         //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, geometryBuffer->getDepthBuffer(), i);
-
-        //         glViewport(0, 0, currentWidth, currentHeight);
-
-        //         hierachicalDepthRender->render();
-
-        //         // std::vector<float> depthBuffer(currentWidth * currentHeight);
-        //         // glReadPixels(0, 0, currentWidth, currentHeight, GL_DEPTH_COMPONENT, GL_FLOAT, depthBuffer.data());
-
-        //         // for (int i = 0; i < currentHeight; i++) {
-        //         //     for (int j = 0; j < currentWidth; j++) {
-        //         //         std::cout << depthBuffer[i*currentWidth + j] << "\t";
-        //         //     }
-        //         //     std::cout << std::endl;
-        //         // }
-        //         // exit(0);
-
-        //         // textObject->renderText(std::string("X: ") + std::to_string(mousePosX), 10, SCR_HEIGHT - 50, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
-        //         // textObject->renderText(std::string("Y: ") + std::to_string(SCR_HEIGHT - mousePosY), 10, SCR_HEIGHT - 100, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
-        //         // float depth;
-        //         // hierachicalDepthFramebuffer->readDepth(mousePosX, SCR_HEIGHT - mousePosY, 1, 1, &depth);
-        //         // textObject->renderText(std::string("DEPTH: ") + std::to_string(depth), 10, SCR_HEIGHT - 350, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
-        //     }
-
-        //     // {
-        //     //     i = 2;
-        //     //     kHierachicalDepthShader->setInt("u_previousLevel", (i - 1));
-        //     //     kHierachicalDepthShader->setProperty(glm::ivec2(currentWidth, currentHeight), "u_previousLevelDimensions");
-
-        //     //     currentWidth = currentWidth/2;
-        //     //     currentHeight = currentHeight/2;
-
-        //     //     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, geometryBuffer->getDepthBuffer(), i);
-
-        //     //     glViewport(0, 0, currentWidth, currentHeight);
-
-        //     //     hierachicalDepthRender->render();
-        //     // }
-
-        //     // {
-        //     //     i = 3;
-        //     //     kHierachicalDepthShader->setInt("u_previousLevel", (i - 1));
-        //     //     kHierachicalDepthShader->setProperty(glm::ivec2(currentWidth, currentHeight), "u_previousLevelDimensions");
-
-        //     //     currentWidth = currentWidth/2;
-        //     //     currentHeight = currentHeight/2;
-
-        //     //     std::cout << "2:" << glGetError() << std::endl;
-        //     //     glViewport(0, 0, currentWidth, currentHeight);
-
-        //     //     std::cout << "3:" << glGetError() << std::endl;
-        //     //     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, geometryBuffer->getDepthBuffer(), i);
-        //     //     std::cout << "4:" << glGetError() << std::endl;
-        //     //     hierachicalDepthRender->render();
-        //     // }
-
-        //     hierachicalDepthFramebuffer->unload();
-        //     hierachicalDepthFramebuffer->blitToFrameBuffer(0);
-        // }
 
         /*
         {

@@ -17,4 +17,6 @@ void main()
     } else {
         FragColor = vec4(normalize(normal.xyz), 1.0);
     }
+
+    FragColor = vec4(depth, depth, depth, 1.0);
 }
