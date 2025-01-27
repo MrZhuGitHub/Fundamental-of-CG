@@ -185,6 +185,43 @@ vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction
     }
 }
 
+vec4 getIndirctLightHiz(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction) 
+{
+    current_mipmap_level = 0;
+    pixels_coords = origin_pixels_coords;
+    ray_screen;
+
+    while(ray_in_screen) {
+        mini_depth = texture(DepthTexture, textureCoord, mipmapLevel);
+
+        ray_pixel_coord = get_pixel_coord_by_mini_depth_in_3d_ray(mini_depth);
+
+        if (ray_pixel_coord == pixels_coords) {
+            if (current_mipmap_level == 0) {
+                return insert_pixel;
+            } else {
+                if (current_mipmap_level >= 1) {
+                    current_mipmap_level--;
+                }
+                
+                pixels_coords = get_pixels_coords_in_previous_mipmap_level(pixels_coords);
+            }
+        } else {
+            next_pixel = step(pixels_coords, current_mipmap_level, ray_screen)
+
+            next_mipmap_level = current_mipmap_level + 1;
+
+            if (pixel_coord_in_next_mipmap(next_pixel) != pixel_coord_in_next_mipmap(current_pixel)) {
+                current_mipmap_level = next_mipmap_level;
+                pixels_coords = pixel_coord_in_next_mipmap(next_pixel)
+            } else {
+                pixels_coords = next_pixel;
+            }
+        }
+    }
+    return out_of_screen;
+}
+
 void main()
 {    
     vec3 V = normalize(cameraPosition - vertexPosition.xyz);
