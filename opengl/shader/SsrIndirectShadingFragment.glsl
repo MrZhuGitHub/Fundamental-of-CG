@@ -10,6 +10,8 @@ uniform vec3 cameraPosition;
 uniform vec2 screenResolution;
 
 uniform highp mat4 world2screenMatrix;
+uniform highp mat4 camera2screenMatrix;
+uniform highp mat4 world2cameraMatrix;
 
 uniform sampler2D normalMapSampler2D;
 uniform sampler2D depthMapSampler2D;
@@ -185,41 +187,115 @@ vec4 getIndirctLight(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction
     }
 }
 
+vec2 getTextureCoordFromNearestDepthIn3D(vec3 origin, vec3 reflect, float depth)
+{
+    float linearDepth = LinearizeDepth(depth);
+    origin = (world2cameraMatrix * vec4(origin, 1.0)).xyz;
+    vec4 direction = world2cameraMatrix * vec4(origin + reflect, 1.0);
+    reflect = direction.xyz - origin;
+    float t = (linearDepth - origin.z)/reflect.z;
+    float x = origin.x + t * reflect.x;
+    float y = origin.y + t * reflect.y;
+    vec4 insertPoint = vec4(x, y, depth, 1.0);
+    vec4 result = camera2screenMatrix * insertPoint;
+    vec2 textureCoord = vec2(result.x/result.w, result.y/result.w);
+    return textureCoord;
+}
+
 vec4 getIndirctLightHiz(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction) 
 {
-    current_mipmap_level = 0;
-    pixels_coords = origin_pixels_coords;
-    ray_screen;
+    float ratio = (direction.y - screenCoord.y)/(direction.x - screenCoord.x);
+    float yStep = 0.0f, xStep = 0.0f;
+    if (abs(ratio) <= 1.0f) {
+        xStep = (direction.x - screenCoord.x)/abs(direction.x - screenCoord.x);
+    } else {
+        ratio = 1.0f/ratio;
+        yStep = (direction.y - screenCoord.y)/abs(direction.y - screenCoord.y);
+    }
 
-    while(ray_in_screen) {
-        mini_depth = texture(DepthTexture, textureCoord, mipmapLevel);
+    int currentMipmapLevel = 0;
+    vec2 currentPixelCoord = floor(screenCoord * textureSize(depthMapSampler2D, currentMipmapLevel));
 
-        ray_pixel_coord = get_pixel_coord_by_mini_depth_in_3d_ray(mini_depth);
+    while(currentPixelCoord.x > 0 && currentPixelCoord.x < textureSize(depthMapSampler2D, currentMipmapLevel).x && currentPixelCoord.y > 0 && currentPixelCoord.y < textureSize(depthMapSampler2D, currentMipmapLevel).y) 
+    {
+        float nearestDepth = texelFetch(depthMapSampler2D, ivec2(currentPixelCoord), currentMipmapLevel).r;
 
-        if (ray_pixel_coord == pixels_coords) {
-            if (current_mipmap_level == 0) {
-                return insert_pixel;
+        vec2 rayPixelCoord = floor(getTextureCoordFromNearestDepthIn3D(origin, reflect, nearestDepth) * textureSize(depthMapSampler2D, currentMipmapLevel));
+
+        if (currentPixelCoord == rayPixelCoord) {
+            if (0 == currentMipmapLevel)
+            {
+                if (nearestDepth < 1.0f) {
+                    vec4 intersection = vec4(currentPixelCoord, 0.0, 1.0);
+                    return intersection;
+                } else {
+                    vec4 outScreen = vec4(0.3);
+                    return outScreen;                     
+                }
+
             } else {
-                if (current_mipmap_level >= 1) {
-                    current_mipmap_level--;
+                if (currentMipmapLevel > 0) {
+                    currentMipmapLevel--;
                 }
                 
-                pixels_coords = get_pixels_coords_in_previous_mipmap_level(pixels_coords);
+                if (xStep == 1.0) {
+                    currentPixelCoord.x = 2 * currentPixelCoord.x;
+                    float x = currentPixelCoord.x/textureSize(depthMapSampler2D, currentMipmapLevel).x;
+                    float y = screenCoord.y + ratio * (x - screenCoord.x);
+                    currentPixelCoord.y = int(floor(y * textureSize(depthMapSampler2D, currentMipmapLevel).y));
+                }
+
+                if (xStep == -1.0) {
+                    currentPixelCoord.x = 2 * currentPixelCoord.x + 1;
+                    float x = currentPixelCoord.x/textureSize(depthMapSampler2D, currentMipmapLevel).x;
+                    float y = screenCoord.y + ratio * (x - screenCoord.x);
+                    currentPixelCoord.y = int(floor(y * textureSize(depthMapSampler2D, currentMipmapLevel).y));
+                }
+
+                if (yStep == 1.0) {
+                    currentPixelCoord.y = 2 * currentPixelCoord.y;
+                    float y = currentPixelCoord.y/textureSize(depthMapSampler2D, currentMipmapLevel).y;
+                    float x = screenCoord.x + ratio * (y - screenCoord.y);
+                    currentPixelCoord.x = int(floor(x * textureSize(depthMapSampler2D, currentMipmapLevel).x));
+                }
+
+                if (yStep == -1.0) {
+                    currentPixelCoord.y =  2 * currentPixelCoord.y + 1;
+                    float y = currentPixelCoord.y/textureSize(depthMapSampler2D, currentMipmapLevel).y;
+                    float x = screenCoord.x + ratio * (y - screenCoord.y);
+                    currentPixelCoord.x = int(floor(x * textureSize(depthMapSampler2D, currentMipmapLevel).x));
+                }
             }
         } else {
-            next_pixel = step(pixels_coords, current_mipmap_level, ray_screen)
+            vec2 nextPixelCoord;
 
-            next_mipmap_level = current_mipmap_level + 1;
+            if (yStep != 0.0)
+            {
+                nextPixelCoord.y = currentPixelCoord.y + yStep;
+                float y = nextPixelCoord.y/textureSize(depthMapSampler2D, currentMipmapLevel).y;
+                float x = screenCoord.x + ratio * (y - screenCoord.y);
+                nextPixelCoord.x = int(floor(x * textureSize(depthMapSampler2D, currentMipmapLevel).x));
+            }
+            
+            if (xStep != 0.0)
+            {
+                nextPixelCoord.x = currentPixelCoord.x + xStep;
+                float x = nextPixelCoord.x/textureSize(depthMapSampler2D, currentMipmapLevel).x;
+                float y = screenCoord.y + ratio * (x - screenCoord.x);
+                nextPixelCoord.y = int(floor(y * textureSize(depthMapSampler2D, currentMipmapLevel).y));
+            }
 
-            if (pixel_coord_in_next_mipmap(next_pixel) != pixel_coord_in_next_mipmap(current_pixel)) {
-                current_mipmap_level = next_mipmap_level;
-                pixels_coords = pixel_coord_in_next_mipmap(next_pixel)
+            if (floor(nextPixelCoord/2) == floor(currentPixelCoord/2) || currentMipmapLevel > 6) {
+                currentPixelCoord = nextPixelCoord;
             } else {
-                pixels_coords = next_pixel;
+                currentMipmapLevel++;
+                currentPixelCoord = ivec2(floor(nextPixelCoord/2));
             }
         }
     }
-    return out_of_screen;
+
+    vec4 outScreen = vec4(0.0);
+    return outScreen; 
 }
 
 void main()
@@ -257,9 +333,19 @@ void main()
             vec4 noNormalizationCoord = world2screenMatrix * vec4(reflectLightSecondPoint, 1.0);
             noNormalizationCoord = noNormalizationCoord/noNormalizationCoord.w;
             vec2 screenCoord = vec2(noNormalizationCoord.xy);
-            screenCoord = (screenCoord + vec2(1.0))*0.5*screenResolution;
+            screenCoord = (screenCoord + vec2(1.0)) * 0.5;
+            vec2 pixelCoord = screenCoord * screenResolution;
 
-            vec4 result = getIndirctLight(vertexPosition.xyz, L, gl_FragCoord.xy, screenCoord);
+            //vec4 result = getIndirctLight(vertexPosition.xyz, L, gl_FragCoord.xy, pixelCoord);
+
+            vec4 vertexCoord = world2screenMatrix * vertexPosition;
+            vertexCoord = vertexCoord/vertexCoord.w;
+            
+            vec4 result = getIndirctLightHiz(vertexPosition.xyz, L, (vertexCoord.xy + vec2(1.0)) * 0.5, screenCoord);
+
+            FragColor = result;
+
+            return;
 
             if (result.w == 1.0) {
                 vec3 indirectLight = texture(directShadingSampler2D, result.xy/screenResolution).xyz;
