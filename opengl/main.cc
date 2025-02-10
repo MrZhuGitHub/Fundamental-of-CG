@@ -684,7 +684,7 @@ int renderBasedOnGames202() {
 
             
             kIndirectLightShader->setProperty((kCamera->getProjectMatrix()), "camera2screenMatrix");
-            kIndirectLightShader->setProperty((kCamera->getCameraPosition()), "world2cameraMatrix");
+            kIndirectLightShader->setProperty((kCamera->getViewMatrix()), "world2cameraMatrix");
             kIndirectLightShader->setProperty((kCamera->getProjectMatrix()*kCamera->getViewMatrix()), "world2screenMatrix");
             kIndirectLightShader->setProperty(kCamera->getCameraPosition(), "cameraPosition");
             kIndirectLightShader->setProperty(glm::vec2(SCR_WIDTH, SCR_HEIGHT), "screenResolution");
