@@ -216,35 +216,14 @@ vec4 getIndirctLightHiz(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direct
     int currentMipmapLevel = 0;
     ivec2 currentPixelCoord = ivec2(gl_FragCoord.xy);
 
-    int count = 0;
-
-    // ivec2 previousPixelCoord = currentPixelCoord;
-    // int previousMipmap = currentMipmapLevel;
-
     while(currentPixelCoord.x > 0 && currentPixelCoord.x < textureSize(depthMapSampler2D, currentMipmapLevel).x && currentPixelCoord.y > 0 && currentPixelCoord.y < textureSize(depthMapSampler2D, currentMipmapLevel).y) 
     {
-        count++;
-
-        if (count > 50) {
-            return vec4(0.0);
-        }
-
-        // if (yStep > 0.0) {
-        //     float previous = float(previousPixelCoord.y)/textureSize(depthMapSampler2D, previousMipmap).y;
-        //     float current = float(currentPixelCoord.y)/textureSize(depthMapSampler2D, currentMipmapLevel).y;
-        //     if (previous  > current) {
-        //         return vec4(float(previousMipmap)/10.0, previous, float(currentMipmapLevel)/10.0, current);
-        //     } else {
-        //         previousPixelCoord = currentPixelCoord;
-        //         previousMipmap = currentMipmapLevel;
-        //     }
-        // }
-
 	    float nearestDepth = texelFetch(depthMapSampler2D, currentPixelCoord, currentMipmapLevel).r;
 
-        ivec2 rayPixelCoord = ivec2(getTextureCoordFromNearestDepthIn3D(origin, reflect, nearestDepth) * textureSize(depthMapSampler2D, currentMipmapLevel));
+        vec2 rayPixelCoord = getTextureCoordFromNearestDepthIn3D(origin, reflect, nearestDepth) * textureSize(depthMapSampler2D, currentMipmapLevel);
 
-        if (abs(currentPixelCoord.x - rayPixelCoord.x) < 1 && abs(currentPixelCoord.y - rayPixelCoord.y) < 1 && currentPixelCoord != ivec2(gl_FragCoord.xy)) {
+        if (abs(float(currentPixelCoord.x) + 0.5 - rayPixelCoord.x) < 0.8 && abs(float(currentPixelCoord.y) + 0.5 - rayPixelCoord.y) < 0.8 && currentPixelCoord != ivec2(gl_FragCoord.xy)) {
+        //if (abs(currentPixelCoord.x - rayPixelCoord.x) < 1 && abs(currentPixelCoord.y - rayPixelCoord.y) < 1 && currentPixelCoord != ivec2(gl_FragCoord.xy)) {
             if (0 == currentMipmapLevel)
             {
                     if (nearestDepth < 1.0f) {
@@ -289,6 +268,7 @@ vec4 getIndirctLightHiz(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direct
             }
         } else {
             ivec2 nextPixelCoord;
+            bool equal;
 
             if (yStep != 0.0)
             {
@@ -297,6 +277,7 @@ vec4 getIndirctLightHiz(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direct
                 float y = float(nextPixelCoord.y)/textureSize(depthMapSampler2D, currentMipmapLevel).y;
                 float x = screenCoord.x + ratio * (y - screenCoord.y);
                 nextPixelCoord.x = int(x * textureSize(depthMapSampler2D, currentMipmapLevel).x);
+                equal = (currentPixelCoord.y/2 != nextPixelCoord.y/2) ? false : true;
             }
             
             if (xStep != 0.0)
@@ -306,13 +287,14 @@ vec4 getIndirctLightHiz(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direct
                 float x = float(nextPixelCoord.x)/textureSize(depthMapSampler2D, currentMipmapLevel).x;
                 float y = screenCoord.y + ratio * (x - screenCoord.x);
                 nextPixelCoord.y = int(y * textureSize(depthMapSampler2D, currentMipmapLevel).y);
+                equal = (currentPixelCoord.x/2 != nextPixelCoord.x/2) ? false : true;
             }
 
-            if ((nextPixelCoord/2) == (currentPixelCoord/2) || currentMipmapLevel > 6) {
-                currentPixelCoord = nextPixelCoord;
-            } else {
+            if ((!equal) && currentMipmapLevel <= 9) {
                 currentMipmapLevel++;
                 currentPixelCoord = nextPixelCoord/2;
+            } else {
+                currentPixelCoord = nextPixelCoord;
             }
         }
     }
@@ -326,8 +308,6 @@ void main()
     vec3 V = normalize(cameraPosition - vertexPosition.xyz);
     vec2 st = gl_FragCoord.xy/screenResolution;
     vec3 N = textureLod(normalMapSampler2D, st, 0).xyz;
-
-    float localDepth = LinearizeDepth(textureLod(depthMapSampler2D, st, 0).r);
 
     vec3 directLightShading = texture(directShadingSampler2D, st).xyz;
 
@@ -366,10 +346,6 @@ void main()
             
             vec4 result = getIndirctLightHiz(vertexPosition.xyz, L, (vertexCoord.xy + vec2(1.0)) * 0.5, screenCoord);
 
-            // FragColor = result;
-
-            // return;
-
             if (result.w == 1.0) {
                 vec3 indirectLight = texture(directShadingSampler2D, result.xy/screenResolution).xyz;
 
@@ -386,5 +362,5 @@ void main()
 
     globalLight = globalLight/(sampleObject + sampleEnvironment);
 
-    FragColor = 0.3*vec4(directLightShading, 1.0) + 0.7*vec4(globalLight, localDepth);
+    FragColor = 0.3*vec4(directLightShading, 1.0) + 0.7*vec4(globalLight, 1.0);
 }

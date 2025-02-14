@@ -524,9 +524,13 @@ int renderBasedOnGames202() {
 
             models[0]->drawModel(kGBufferShader);
 
+            glDepthMask(false);
+
             kGBufferShader->setBool("enableDepth", false);
 
             models[1]->drawModel(kGBufferShader);
+
+            glDepthMask(true);
 
             // //draw text
             // textObject->renderText(std::string("X: ") + std::to_string(mousePosX), 10, SCR_HEIGHT - 50, 0.6f, glm::vec3(1.0f, 0.0f, 1.0f));
