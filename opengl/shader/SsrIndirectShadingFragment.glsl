@@ -21,7 +21,7 @@ uniform bool SSR;
 
 const float PI = 3.14159265359;
 
-const uint SAMPLE_COUNT = 10u;
+const uint SAMPLE_COUNT = 8u;
 
 in vec4 glPosition;
 
@@ -72,7 +72,7 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
 }
 
 // BrdfDividePDF = Brdf*cosTheta/PDF
-vec3 BrdfDividePDF(vec3 V, vec3 L, vec3 N, float roughness, vec3 fresnel)
+vec3 BrdfDividePDF(vec3 V, vec3 N, vec3 L, float roughness, vec3 fresnel)
 {
     V = normalize(V);
     L = normalize(L);
@@ -308,69 +308,16 @@ vec4 getIndirctLightHiz(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direct
     return outScreen; 
 }
 
-vec4 getIndirctLightHizLinear(vec3 origin, vec3 reflect, vec2 screenCoord, vec2 direction) 
-{
-    highp float ratio = (direction.y - screenCoord.y)/(direction.x - screenCoord.x);
-    highp float yStep = 0.0f, xStep = 0.0f;
-    if (abs(ratio) <= 1.0f) {
-        xStep = (direction.x - screenCoord.x)/abs(direction.x - screenCoord.x);
-    } else {
-        ratio = 1.0f/ratio;
-        yStep = (direction.y - screenCoord.y)/abs(direction.y - screenCoord.y);
+float haltonValue(int index, int base) {
+    float result = 0.0;
+    float fraction = 1.0 / base;
+    int currentIndex = index;
+    while (currentIndex > 0) {
+        result += (currentIndex % base) * fraction;
+        currentIndex /= base;
+        fraction /= base;
     }
-
-    int currentMipmapLevel = 0;
-    ivec2 currentPixelCoord = ivec2(gl_FragCoord.xy);
-
-    while(currentPixelCoord.x >= 0 && currentPixelCoord.x <= textureSize(depthMapSampler2D, currentMipmapLevel).x && currentPixelCoord.y >= 0 && currentPixelCoord.y <= textureSize(depthMapSampler2D, currentMipmapLevel).y) 
-    {
-	    highp float nearestDepth = texelFetch(depthMapSampler2D, currentPixelCoord, currentMipmapLevel).r;
-
-        vec2 rayPixelCoord = getTextureCoordFromNearestDepthIn3D(origin, reflect, nearestDepth) * textureSize(depthMapSampler2D, currentMipmapLevel);
-
-        if (abs(float(currentPixelCoord.x) + 0.5 - rayPixelCoord.x) < 1.0 && abs(float(currentPixelCoord.y) + 0.5 - rayPixelCoord.y) < 1.0 && currentPixelCoord != ivec2(gl_FragCoord.xy)) {
-
-            if (nearestDepth < 1.0f) {
-                vec4 intersection = vec4(vec2(rayPixelCoord), 0.0, 1.0);
-                return intersection;
-            } else {
-                vec4 outScreen = vec4(0.8);
-                return outScreen;                     
-            }
-            
-        } else {
-            ivec2 nextPixelCoord;
-
-            if (yStep != 0.0)
-            {
-                int step = (yStep > 0 ? 1 : -1);
-                nextPixelCoord.y = currentPixelCoord.y + step;
-                highp float y = float(nextPixelCoord.y)/textureSize(depthMapSampler2D, currentMipmapLevel).y;
-                highp float x = screenCoord.x + ratio * (y - screenCoord.y);
-                nextPixelCoord.x = int(x * textureSize(depthMapSampler2D, currentMipmapLevel).x);
-                if (nextPixelCoord.x != currentPixelCoord.x) {
-                    nextPixelCoord.y = currentPixelCoord.y;
-                }
-            }
-            
-            if (xStep != 0.0)
-            {
-                int step = (xStep > 0 ? 1 : -1);
-                nextPixelCoord.x = currentPixelCoord.x + step;
-                highp float x = float(nextPixelCoord.x)/textureSize(depthMapSampler2D, currentMipmapLevel).x;
-                highp float y = screenCoord.y + ratio * (x - screenCoord.x);
-                nextPixelCoord.y = int(y * textureSize(depthMapSampler2D, currentMipmapLevel).y);
-                if (nextPixelCoord.y != currentPixelCoord.y) {
-                    nextPixelCoord.x = currentPixelCoord.x;
-                }
-            }
-
-            currentPixelCoord = nextPixelCoord;
-        }
-    }
-
-    vec4 outScreen = vec4(0.0);
-    return outScreen; 
+    return result;
 }
 
 void main()
@@ -390,9 +337,14 @@ void main()
     float sampleObject = 0;
     float sampleEnvironment = 0;
 
-    for(uint i = 0u; i < SAMPLE_COUNT; ++i)
+    for(uint i = 1u; i <= SAMPLE_COUNT; ++i)
     {
-        vec2 Xi = Hammersley(i, SAMPLE_COUNT);
+        int randomseed = int(gl_FragCoord.x + gl_FragCoord.y * textureSize(depthMapSampler2D, 0).x);
+        vec2 Xi;
+        Xi.x = haltonValue(randomseed*int(i), 11);
+        Xi.y = haltonValue(randomseed*int(i), 7);
+        float bias = 0.7;
+        Xi.y = mix(Xi.y, 0.0, bias);
         vec3 H  = ImportanceSampleGGX(Xi, N, roughness);
         vec3 L = normalize(2.0 * dot(V, H) * H - V);
 
@@ -416,16 +368,10 @@ void main()
             
             vec4 result = getIndirctLightHiz(vertexPosition.xyz, L, (vertexCoord.xy + vec2(1.0)) * 0.5, screenCoord);
 
-            // if (result.w > 0.0 && result.w < 1.0) {
-            //     float a = dot(L, H);
-            //     FragColor = vec4(a);
-            //     return;
-            // }
-
             if (result.w == 1.0) {
                 vec3 indirectLight = texture(directShadingSampler2D, result.xy/screenResolution).xyz;
 
-                // indirectLight = indirectLight*BrdfDividePDF(V, N, L, roughness, modelColor);
+                indirectLight = indirectLight*BrdfDividePDF(V, N, L, roughness, modelColor);
 
                 sampleObject = sampleObject + 1.0;
                 globalLight = globalLight + indirectLight;
@@ -438,5 +384,5 @@ void main()
 
     globalLight = globalLight/(sampleObject + sampleEnvironment);
 
-    FragColor = 0.3*vec4(directLightShading, 1.0) + 0.7*vec4(globalLight, 1.0);
+    FragColor = vec4(globalLight, 1.0);
 }
