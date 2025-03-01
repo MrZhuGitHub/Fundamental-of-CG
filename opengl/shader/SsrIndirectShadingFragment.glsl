@@ -21,7 +21,7 @@ uniform bool SSR;
 
 const float PI = 3.14159265359;
 
-const uint SAMPLE_COUNT = 8u;
+const uint SAMPLE_COUNT = 1u;
 
 in vec4 glPosition;
 
@@ -337,23 +337,35 @@ void main()
     float sampleObject = 0;
     float sampleEnvironment = 0;
 
-    for(uint i = 1u; i <= SAMPLE_COUNT; ++i)
+    
+
+    for (uint i = 1u; i <= SAMPLE_COUNT; ++i) 
     {
+        float NdotL = 0.0;
+        float NdotH, HdotV;
+        float bias = 0.7;
         int randomseed = int(gl_FragCoord.x + gl_FragCoord.y * textureSize(depthMapSampler2D, 0).x);
         vec2 Xi;
-        Xi.x = haltonValue(randomseed*int(i), 11);
-        Xi.y = haltonValue(randomseed*int(i), 7);
-        float bias = 0.7;
-        Xi.y = mix(Xi.y, 0.0, bias);
-        vec3 H  = ImportanceSampleGGX(Xi, N, roughness);
-        vec3 L = normalize(2.0 * dot(V, H) * H - V);
+        vec3 H, L;
+        int random = 0;
 
-        float NdotL = max(dot(N, L), 0.0);
-        float NdotH = max(dot(N, H), 0.0);
-        float HdotV = max(dot(H, V), 0.0);
+        while (NdotL <= 0.0 && random < 10) {
+            
+            Xi.x = haltonValue(randomseed*int(i) + random, 11);
+            Xi.y = haltonValue(randomseed*int(i) + random, 7);
 
-        if(NdotL > 0.0)
-        {
+            Xi.y = mix(Xi.y, 0.0, bias);
+            H  = ImportanceSampleGGX(Xi, N, roughness);
+            L = normalize(2.0 * dot(V, H) * H - V);
+
+            NdotL = max(dot(N, L), 0.0);
+            NdotH = max(dot(N, H), 0.0);
+            HdotV = max(dot(H, V), 0.0);
+
+            random++;
+        }
+
+        if (NdotL > 0.0) {
             vec3 reflectLightSecondPoint = vertexPosition.xyz + L;
             vec4 noNormalizationCoord = world2screenMatrix * vec4(reflectLightSecondPoint, 1.0);
             noNormalizationCoord = noNormalizationCoord/noNormalizationCoord.w;

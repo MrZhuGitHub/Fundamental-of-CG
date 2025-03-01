@@ -649,7 +649,7 @@ int renderBasedOnGames202() {
             models[0]->drawModel(kModelShader);
 
             kModelShader->setProperty(glm::vec3(1.0, 1.0, 1.0), "modelColor");
-            kModelShader->setFloat("roughness", 0.4);
+            kModelShader->setFloat("roughness", 0.3);
             models[1]->drawModel(kModelShader);
 
             directShadingFramebuffer->unload();
@@ -699,7 +699,7 @@ int renderBasedOnGames202() {
             models[0]->drawModel(kIndirectLightShader);
 
             kIndirectLightShader->setProperty(glm::vec3(1.0, 1.0, 1.0), "modelColor");
-            kIndirectLightShader->setFloat("roughness", 0.4);
+            kIndirectLightShader->setFloat("roughness", 0.3);
             kIndirectLightShader->setBool("SSR", true);
             models[1]->drawModel(kIndirectLightShader);
 
